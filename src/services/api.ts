@@ -47,6 +47,11 @@ async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promi
     throw new Error(error.error || error.message || `HTTP ${response.status}`);
   }
 
+  // 204 No Content — no body to parse
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
   return response.json();
 }
 
