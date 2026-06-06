@@ -5,7 +5,7 @@ export const Route = createRootRoute({
   component: () => {
     const location = useLocation();
     const isAdmin = location.pathname.startsWith('/admin');
-    const isMedicoPanel = location.pathname.startsWith('/medico/');
+    const isMedicoPanel = location.pathname.startsWith('/medico/') || location.pathname === '/medico';
 
     if (isAdmin || isMedicoPanel) return <Outlet />;
 
