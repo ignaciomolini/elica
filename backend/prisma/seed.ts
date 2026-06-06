@@ -13,17 +13,21 @@ const specialties = [
   { name: "Oftalmología", description: "Cuidado y cirugía de ojos", icon: "eye" },
 ];
 
+function avatarUrl(name: string): string {
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&color=fff&size=200`;
+}
+
 const doctors = [
-  { name: "Dra. Maria Garcia", email: "maria@elica.com", avatar: "mg", bio: "Cardióloga con 15 años de experiencia", specialtyIndex: 0 },
-  { name: "Dr. Carlos Lopez", email: "carlos@elica.com", avatar: "cl", bio: "Dermatólogo especializado en procedimientos estéticos", specialtyIndex: 1 },
-  { name: "Dra. Ana Martinez", email: "ana@elica.com", avatar: "am", bio: "Pediatra enfocada en cuidado neonatal", specialtyIndex: 2 },
-  { name: "Dr. Roberto Sanchez", email: "roberto@elica.com", avatar: "rs", bio: "Cirujano ortopédico especializado en lesiones deportivas", specialtyIndex: 3 },
-  { name: "Dra. Laura Fernandez", email: "laura@elica.com", avatar: "lf", bio: "Neuróloga con experiencia en tratamiento de migrañas", specialtyIndex: 4 },
-  { name: "Dr. Diego Ramirez", email: "diego@elica.com", avatar: "dr", bio: "Oftalmólogo especializado en cirugía láser", specialtyIndex: 5 },
-  { name: "Dra. Sofia Torres", email: "sofia@elica.com", avatar: "st", bio: "Cardióloga enfocada en cardiología preventiva", specialtyIndex: 0 },
-  { name: "Dr. Miguel Herrera", email: "miguel@elica.com", avatar: "mh", bio: "Pediatra con 10 años de experiencia", specialtyIndex: 2 },
-  { name: "Dra. Valentina Cruz", email: "valentina@elica.com", avatar: "vc", bio: "Dermatóloga especializada en dermatología pediátrica", specialtyIndex: 1 },
-  { name: "Dr. Andres Morales", email: "andres@elica.com", avatar: "am2", bio: "Ortopedista especializado en reemplazo articular", specialtyIndex: 3 },
+  { name: "Dra. Maria Garcia", email: "maria@elica.com", bio: "Cardióloga con 15 años de experiencia", specialtyIndex: 0 },
+  { name: "Dr. Carlos Lopez", email: "carlos@elica.com", bio: "Dermatólogo especializado en procedimientos estéticos", specialtyIndex: 1 },
+  { name: "Dra. Ana Martinez", email: "ana@elica.com", bio: "Pediatra enfocada en cuidado neonatal", specialtyIndex: 2 },
+  { name: "Dr. Roberto Sanchez", email: "roberto@elica.com", bio: "Cirujano ortopédico especializado en lesiones deportivas", specialtyIndex: 3 },
+  { name: "Dra. Laura Fernandez", email: "laura@elica.com", bio: "Neuróloga con experiencia en tratamiento de migrañas", specialtyIndex: 4 },
+  { name: "Dr. Diego Ramirez", email: "diego@elica.com", bio: "Oftalmólogo especializado en cirugía láser", specialtyIndex: 5 },
+  { name: "Dra. Sofia Torres", email: "sofia@elica.com", bio: "Cardióloga enfocada en cardiología preventiva", specialtyIndex: 0 },
+  { name: "Dr. Miguel Herrera", email: "miguel@elica.com", bio: "Pediatra con 10 años de experiencia", specialtyIndex: 2 },
+  { name: "Dra. Valentina Cruz", email: "valentina@elica.com", bio: "Dermatóloga especializada en dermatología pediátrica", specialtyIndex: 1 },
+  { name: "Dr. Andres Morales", email: "andres@elica.com", bio: "Ortopedista especializado en reemplazo articular", specialtyIndex: 3 },
 ];
 
 function generateTimeSlots() {
@@ -71,7 +75,7 @@ async function main() {
       email: "admin@elica.com",
       password: adminPassword,
       role: "ADMIN",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=admin",
+      avatar: avatarUrl("Admin Elica"),
       bio: "Administrador del sistema",
     },
   });
@@ -81,10 +85,12 @@ async function main() {
   const hashedPassword = await bcrypt.hash("admin123", SALT_ROUNDS);
   const createdDoctors = [];
   for (const d of doctors) {
-    const { specialtyIndex, ...doctorData } = d;
+    const { specialtyIndex, name, ...doctorData } = d;
     const created = await prisma.doctor.create({
       data: {
         ...doctorData,
+        name,
+        avatar: avatarUrl(name),
         password: hashedPassword,
         role: "DOCTOR",
         specialties: {
