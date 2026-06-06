@@ -168,22 +168,22 @@ export function DoctorAppointments() {
                       <td className="px-6 py-4">
                         <div className="flex gap-2">
                           {apt.status === 'PENDING' && (
-                            <>
-                              <button
-                                onClick={() => handleStatusChange(apt.id, 'CONFIRMED')}
-                                disabled={isUpdating}
-                                className="px-3 py-1 text-xs font-medium bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors disabled:opacity-50"
-                              >
-                                {isUpdating ? '...' : 'Confirmar'}
-                              </button>
-                              <button
-                                onClick={() => handleStatusChange(apt.id, 'CANCELLED')}
-                                disabled={isUpdating}
-                                className="px-3 py-1 text-xs font-medium bg-yellow-50 text-yellow-700 rounded-lg hover:bg-yellow-100 transition-colors disabled:opacity-50"
-                              >
-                                {isUpdating ? '...' : 'Cancelar'}
-                              </button>
-                            </>
+                            <button
+                              onClick={() => handleStatusChange(apt.id, 'CONFIRMED')}
+                              disabled={isUpdating}
+                              className="px-3 py-1 text-xs font-medium bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors disabled:opacity-50"
+                            >
+                              {isUpdating ? '...' : 'Confirmar'}
+                            </button>
+                          )}
+                          {(apt.status === 'PENDING' || apt.status === 'CONFIRMED') && (
+                            <button
+                              onClick={() => handleStatusChange(apt.id, 'CANCELLED')}
+                              disabled={isUpdating}
+                              className="px-3 py-1 text-xs font-medium bg-yellow-50 text-yellow-700 rounded-lg hover:bg-yellow-100 transition-colors disabled:opacity-50"
+                            >
+                              {isUpdating ? '...' : 'Cancelar'}
+                            </button>
                           )}
                           <button
                             onClick={() => handleDelete(apt.id)}

@@ -1,5 +1,5 @@
 import prisma from "../lib/prisma.js";
-import { generateCode, mockSendCode } from "../utils/verification.js";
+import { generateCode, mockSendCode, mockSendEmail } from "../utils/verification.js";
 import { AppointmentStatus } from "@prisma/client";
 import crypto from "crypto";
 
@@ -276,6 +276,7 @@ export async function updateAppointmentStatus(
 ) {
   const appointment = await prisma.appointment.findUnique({
     where: { id: appointmentId },
+    include: { patient: true, doctor: { select: { name: true } } },
   });
 
   if (!appointment) {
@@ -291,12 +292,21 @@ export async function updateAppointmentStatus(
     },
   });
 
-  // If cancelled, free the slot
+  // If cancelled, free the slot and notify patient
   if (status === AppointmentStatus.CANCELLED) {
     await prisma.timeSlot.update({
       where: { id: appointment.timeSlotId },
       data: { available: true },
     });
+
+    const dateStr = appointment.date.toLocaleDateString("es-AR", {
+      day: "2-digit", month: "2-digit", year: "numeric",
+    });
+    mockSendEmail(
+      appointment.patient.email,
+      "Turno cancelado - Elica",
+      `Hola ${appointment.patient.name}, tu turno con ${appointment.doctor.name} del ${dateStr} a las ${appointment.startTime} fue cancelado.`
+    );
   }
 
   return updated;
