@@ -179,13 +179,17 @@ export async function updateDoctor(
 export async function deleteDoctor(id: string) {
   const doctor = await prisma.doctor.findUnique({
     where: { id },
-    include: { appointments: true, timeSlots: true },
+    include: { appointments: true, timeSlots: true, schedules: true },
   });
   if (!doctor) {
     throw new Error("Médico no encontrado");
   }
-  if (doctor.appointments.length > 0 || doctor.timeSlots.length > 0) {
-    throw new Error("No se puede eliminar un médico con turnos u horarios existentes");
+  if (doctor.appointments.length > 0) {
+    throw new Error("No se puede eliminar un médico con turnos existentes");
+  }
+  // Delete time slots and schedules that don't have appointments
+  if (doctor.timeSlots.length > 0) {
+    await prisma.timeSlot.deleteMany({ where: { doctorId: id } });
   }
   return prisma.doctor.delete({ where: { id } });
 }

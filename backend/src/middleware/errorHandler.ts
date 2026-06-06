@@ -59,5 +59,16 @@ export function errorHandler(
     return;
   }
 
+  if (err.message.includes("No se puede eliminar")) {
+    res.status(409).json({ error: err.message });
+    return;
+  }
+
+  // Prisma foreign key violation
+  if (prismaErr.code === "P2003") {
+    res.status(409).json({ error: "No se puede eliminar porque tiene registros relacionados" });
+    return;
+  }
+
   res.status(500).json({ error: "Error interno del servidor" });
 }
