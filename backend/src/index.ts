@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
+import path from "path";
 
 import specialtyRoutes from "./routes/specialties.js";
 import doctorRoutes from "./routes/doctors.js";
@@ -21,6 +22,7 @@ const PORT = process.env.PORT || 3001;
 app.use(cookieParser());
 app.use(cors({ origin: "http://localhost:5173", credentials: true }));
 app.use(express.json());
+app.use("/uploads", express.static(path.resolve("uploads")));
 
 // Public routes
 app.use("/api/specialties", specialtyRoutes);

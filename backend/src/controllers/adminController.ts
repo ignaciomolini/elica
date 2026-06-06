@@ -52,7 +52,12 @@ export async function getDoctors(_req: Request, res: Response, next: NextFunctio
 
 export async function createDoctor(req: Request, res: Response, next: NextFunction) {
   try {
-    const doctor = await doctorService.createDoctor(req.body);
+    const data = req.body;
+    // Default avatar with initials if not provided
+    if (!data.avatar && data.name) {
+      data.avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(data.name)}&background=random&color=fff&size=200`;
+    }
+    const doctor = await doctorService.createDoctor(data);
     res.status(201).json(doctor);
   } catch (err) {
     next(err);

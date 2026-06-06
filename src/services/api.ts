@@ -160,6 +160,22 @@ export const adminApi = {
   getStats: () => apiRequest<DashboardStats>('/admin/stats'),
 };
 
+// File upload helper (no JSON content-type — uses FormData)
+async function apiUpload<T>(endpoint: string, formData: FormData): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    method: 'POST',
+    credentials: 'include',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'La solicitud falló' }));
+    throw new Error(error.error || error.message || `HTTP ${response.status}`);
+  }
+
+  return response.json();
+}
+
 // Doctor API (authentication via HttpOnly cookie)
 export const doctorPanelApi = {
   getAppointments: () => apiRequest<Appointment[]>('/doctor/appointments'),
@@ -193,6 +209,12 @@ export const doctorPanelApi = {
     apiRequest<{ message: string }>(`/doctor/appointments/${appointmentId}`, {
       method: 'DELETE',
     }),
+
+  uploadAvatar: (file: File) => {
+    const formData = new FormData();
+    formData.append('avatar', file);
+    return apiUpload<{ url: string }>('/doctor/avatar', formData);
+  },
 
   updateProfile: (data: { name?: string; bio?: string; avatar?: string }) =>
     apiRequest<Doctor>('/doctor/profile', {

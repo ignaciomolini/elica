@@ -21,7 +21,7 @@ const updateStatusSchema = z.object({
 const updateProfileSchema = z.object({
   name: z.string().min(2, "El nombre debe tener al menos 2 caracteres").optional(),
   bio: z.string().optional(),
-  avatar: z.string().url("Debe ser una URL valida").optional(),
+  avatar: z.string().optional(),
 });
 
 export async function getAppointments(req: AuthRequest, res: Response, next: NextFunction) {

@@ -114,17 +114,36 @@ export function DoctorModal({ doctor, specialties, onSave, onClose }: DoctorModa
             </div>
           )}
 
+          {/* Avatar preview */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              URL del avatar
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Foto de perfil
             </label>
-            <input
-              type="url"
-              value={form.avatar}
-              onChange={(e) => setForm({ ...form, avatar: e.target.value })}
-              placeholder="https://ejemplo.com/foto.jpg"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
-            />
+            <div className="flex items-center gap-3">
+              {doctor ? (
+                <img
+                  src={
+                    doctor.avatar.startsWith('http')
+                      ? doctor.avatar
+                      : `http://localhost:3001${doctor.avatar}`
+                  }
+                  alt={doctor.name}
+                  className="w-16 h-16 rounded-full object-cover border-2 border-gray-200"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                  }}
+                />
+              ) : (
+                <div className="w-16 h-16 rounded-full bg-gray-100 border-2 border-gray-200 flex items-center justify-center text-gray-400 text-sm">
+                  ?
+                </div>
+              )}
+              <p className="text-sm text-gray-500">
+                {doctor
+                  ? 'El médico puede cambiar su foto desde su perfil'
+                  : 'Se generará un avatar automático con las iniciales'}
+              </p>
+            </div>
           </div>
 
           <div>
