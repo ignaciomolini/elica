@@ -197,6 +197,53 @@ export async function resendCode(req: Request, res: Response, next: NextFunction
   }
 }
 
+const actionCodeSchema = z.object({
+  email: z.string().email("Formato de correo inválido"),
+  dni: z.string().min(7, "El DNI debe tener al menos 7 caracteres"),
+  code: z.string().length(6, "El código debe tener 6 dígitos"),
+});
+
+const rescheduleSchema = z.object({
+  email: z.string().email("Formato de correo inválido"),
+  dni: z.string().min(7, "El DNI debe tener al menos 7 caracteres"),
+  code: z.string().length(6, "El código debe tener 6 dígitos"),
+  timeSlotId: z.string().min(1, "El ID del nuevo horario es requerido"),
+});
+
+export async function requestActionCode(req: Request, res: Response, next: NextFunction) {
+  try {
+    const id = req.params.id as string;
+    const { email, dni } = cancelAppointmentSchema.parse(req.body);
+    const result = await appointmentService.requestActionCode(id, email, dni);
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function cancelWithCode(req: Request, res: Response, next: NextFunction) {
+  try {
+    const id = req.params.id as string;
+    const { email, dni, code } = actionCodeSchema.parse(req.body);
+    const appointment = await appointmentService.cancelWithCode(id, email, dni, code);
+    res.clearCookie("verification_token");
+    res.json(appointment);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function reschedule(req: Request, res: Response, next: NextFunction) {
+  try {
+    const id = req.params.id as string;
+    const { email, dni, code, timeSlotId } = rescheduleSchema.parse(req.body);
+    const appointment = await appointmentService.rescheduleAppointment(id, email, dni, code, timeSlotId);
+    res.json(appointment);
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function getPendingByToken(req: Request, res: Response, next: NextFunction) {
   try {
     const token = req.cookies?.verification_token;

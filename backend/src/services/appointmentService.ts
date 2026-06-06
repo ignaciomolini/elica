@@ -339,6 +339,175 @@ export async function getPendingAppointment(email: string, dni: string) {
   };
 }
 
+export async function requestActionCode(appointmentId: string, email: string, dni: string) {
+  const appointment = await prisma.appointment.findUnique({
+    where: { id: appointmentId },
+    include: { patient: true },
+  });
+
+  if (!appointment) {
+    throw new Error("Turno no encontrado");
+  }
+
+  if (appointment.patient.email !== email || appointment.patient.dni !== dni) {
+    throw new Error("No está autorizado para realizar esta acción");
+  }
+
+  if (appointment.status === AppointmentStatus.CANCELLED) {
+    throw new Error("El turno ya está cancelado");
+  }
+
+  // Generate action code
+  const actionCode = generateCode();
+  const actionCodeExpiresAt = new Date();
+  actionCodeExpiresAt.setMinutes(actionCodeExpiresAt.getMinutes() + 15); // 15 min expiry
+
+  await prisma.appointment.update({
+    where: { id: appointmentId },
+    data: { actionCode, actionCodeExpiresAt },
+  });
+
+  mockSendCode(actionCode, appointment.patient.phone);
+
+  return { message: "Código enviado correctamente" };
+}
+
+export async function cancelWithCode(appointmentId: string, email: string, dni: string, code: string) {
+  const appointment = await prisma.appointment.findUnique({
+    where: { id: appointmentId },
+    include: { patient: true },
+  });
+
+  if (!appointment) {
+    throw new Error("Turno no encontrado");
+  }
+
+  if (appointment.patient.email !== email || appointment.patient.dni !== dni) {
+    throw new Error("No está autorizado para cancelar este turno");
+  }
+
+  if (appointment.status === AppointmentStatus.CANCELLED) {
+    throw new Error("El turno ya está cancelado");
+  }
+
+  verifyActionCode(appointment, code);
+
+  // Cancel appointment and free the slot
+  const [updatedAppointment] = await prisma.$transaction([
+    prisma.appointment.update({
+      where: { id: appointmentId },
+      data: { status: AppointmentStatus.CANCELLED, actionCode: null, actionCodeExpiresAt: null },
+      include: {
+        doctor: { select: { id: true, name: true } },
+        patient: { select: { id: true, name: true, email: true, dni: true } },
+      },
+    }),
+    prisma.timeSlot.update({
+      where: { id: appointment.timeSlotId },
+      data: { available: true },
+    }),
+  ]);
+
+  return updatedAppointment;
+}
+
+export async function rescheduleAppointment(
+  appointmentId: string,
+  email: string,
+  dni: string,
+  code: string,
+  newTimeSlotId: string
+) {
+  return prisma.$transaction(async (tx) => {
+    const appointment = await tx.appointment.findUnique({
+      where: { id: appointmentId },
+      include: { patient: true },
+    });
+
+    if (!appointment) {
+      throw new Error("Turno no encontrado");
+    }
+
+    if (appointment.patient.email !== email || appointment.patient.dni !== dni) {
+      throw new Error("No está autorizado para modificar este turno");
+    }
+
+    if (appointment.status === AppointmentStatus.CANCELLED) {
+      throw new Error("El turno ya está cancelado");
+    }
+
+    verifyActionCode(appointment, code);
+
+    // Check new slot availability
+    const newTimeSlot = await tx.timeSlot.findUnique({
+      where: { id: newTimeSlotId },
+    });
+
+    if (!newTimeSlot) {
+      throw new Error("El nuevo horario no existe");
+    }
+
+    if (newTimeSlot.doctorId !== appointment.doctorId) {
+      throw new Error("El horario no pertenece al mismo médico");
+    }
+
+    if (!newTimeSlot.available) {
+      throw new Error("El nuevo horario no está disponible");
+    }
+
+    // Check no existing appointment for that slot
+    const existingForSlot = await tx.appointment.findUnique({
+      where: { timeSlotId: newTimeSlotId },
+    });
+    if (existingForSlot) {
+      throw new Error("El nuevo horario ya está reservado");
+    }
+
+    // Free old slot, assign new one
+    await tx.timeSlot.update({
+      where: { id: appointment.timeSlotId },
+      data: { available: true },
+    });
+
+    await tx.timeSlot.update({
+      where: { id: newTimeSlotId },
+      data: { available: false },
+    });
+
+    const updated = await tx.appointment.update({
+      where: { id: appointmentId },
+      data: {
+        timeSlotId: newTimeSlotId,
+        date: newTimeSlot.date,
+        startTime: newTimeSlot.startTime,
+        endTime: newTimeSlot.endTime,
+        actionCode: null,
+        actionCodeExpiresAt: null,
+      },
+      include: {
+        doctor: { select: { id: true, name: true, avatar: true, specialties: { select: { id: true, name: true } } } },
+        patient: { select: { id: true, name: true, email: true, phone: true, dni: true } },
+      },
+    });
+
+    return updated;
+  });
+}
+
+function verifyActionCode(appointment: { actionCode: string | null; actionCodeExpiresAt: Date | null }, code: string) {
+  if (!appointment.actionCode || !appointment.actionCodeExpiresAt) {
+    throw new Error("No se ha solicitado un código de acción. Solicítelo primero.");
+  }
+
+  if (new Date() > appointment.actionCodeExpiresAt) {
+    throw new Error("El código ha expirado. Solicite uno nuevo.");
+  }
+
+  if (appointment.actionCode !== code) {
+    throw new Error("Código inválido");
+  }
+}
+
 export async function resendVerificationCode(appointmentId: string, email: string, dni: string) {
   const appointment = await prisma.appointment.findUnique({
     where: { id: appointmentId },

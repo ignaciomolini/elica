@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as VerificacionRouteImport } from './routes/verificacion'
 import { Route as ReservarRouteImport } from './routes/reservar'
+import { Route as MisTurnosRouteImport } from './routes/mis-turnos'
 import { Route as MedicosRouteImport } from './routes/medicos'
 import { Route as MedicoRouteImport } from './routes/medico'
 import { Route as EspecialidadesRouteImport } from './routes/especialidades'
@@ -36,6 +37,11 @@ const VerificacionRoute = VerificacionRouteImport.update({
 const ReservarRoute = ReservarRouteImport.update({
   id: '/reservar',
   path: '/reservar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MisTurnosRoute = MisTurnosRouteImport.update({
+  id: '/mis-turnos',
+  path: '/mis-turnos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MedicosRoute = MedicosRouteImport.update({
@@ -126,6 +132,7 @@ export interface FileRoutesByFullPath {
   '/especialidades': typeof EspecialidadesRoute
   '/medico': typeof MedicoRouteWithChildren
   '/medicos': typeof MedicosRoute
+  '/mis-turnos': typeof MisTurnosRoute
   '/reservar': typeof ReservarRoute
   '/verificacion': typeof VerificacionRoute
   '/admin/especialidades': typeof AdminEspecialidadesRoute
@@ -144,6 +151,7 @@ export interface FileRoutesByTo {
   '/confirmacion': typeof ConfirmacionRoute
   '/especialidades': typeof EspecialidadesRoute
   '/medicos': typeof MedicosRoute
+  '/mis-turnos': typeof MisTurnosRoute
   '/reservar': typeof ReservarRoute
   '/verificacion': typeof VerificacionRoute
   '/admin/especialidades': typeof AdminEspecialidadesRoute
@@ -165,6 +173,7 @@ export interface FileRoutesById {
   '/especialidades': typeof EspecialidadesRoute
   '/medico': typeof MedicoRouteWithChildren
   '/medicos': typeof MedicosRoute
+  '/mis-turnos': typeof MisTurnosRoute
   '/reservar': typeof ReservarRoute
   '/verificacion': typeof VerificacionRoute
   '/admin/especialidades': typeof AdminEspecialidadesRoute
@@ -187,6 +196,7 @@ export interface FileRouteTypes {
     | '/especialidades'
     | '/medico'
     | '/medicos'
+    | '/mis-turnos'
     | '/reservar'
     | '/verificacion'
     | '/admin/especialidades'
@@ -205,6 +215,7 @@ export interface FileRouteTypes {
     | '/confirmacion'
     | '/especialidades'
     | '/medicos'
+    | '/mis-turnos'
     | '/reservar'
     | '/verificacion'
     | '/admin/especialidades'
@@ -225,6 +236,7 @@ export interface FileRouteTypes {
     | '/especialidades'
     | '/medico'
     | '/medicos'
+    | '/mis-turnos'
     | '/reservar'
     | '/verificacion'
     | '/admin/especialidades'
@@ -246,6 +258,7 @@ export interface RootRouteChildren {
   EspecialidadesRoute: typeof EspecialidadesRoute
   MedicoRoute: typeof MedicoRouteWithChildren
   MedicosRoute: typeof MedicosRoute
+  MisTurnosRoute: typeof MisTurnosRoute
   ReservarRoute: typeof ReservarRoute
   VerificacionRoute: typeof VerificacionRoute
 }
@@ -264,6 +277,13 @@ declare module '@tanstack/react-router' {
       path: '/reservar'
       fullPath: '/reservar'
       preLoaderRoute: typeof ReservarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mis-turnos': {
+      id: '/mis-turnos'
+      path: '/mis-turnos'
+      fullPath: '/mis-turnos'
+      preLoaderRoute: typeof MisTurnosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/medicos': {
@@ -425,6 +445,7 @@ const rootRouteChildren: RootRouteChildren = {
   EspecialidadesRoute: EspecialidadesRoute,
   MedicoRoute: MedicoRouteWithChildren,
   MedicosRoute: MedicosRoute,
+  MisTurnosRoute: MisTurnosRoute,
   ReservarRoute: ReservarRoute,
   VerificacionRoute: VerificacionRoute,
 }

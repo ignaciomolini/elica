@@ -74,6 +74,8 @@ model Appointment {
   verificationToken  String?           @unique
   verified           Boolean           @default(false)
   expiresAt          DateTime?         // Expiración para turnos PENDING
+  actionCode         String?
+  actionCodeExpiresAt DateTime?        // Expiración para códigos de acción (cancelar/modificar)
   createdAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
 }

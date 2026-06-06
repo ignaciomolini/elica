@@ -102,6 +102,21 @@ export const appointmentsApi = {
       method: 'DELETE',
       body: JSON.stringify({ email, dni }),
     }),
+  requestActionCode: (id: string, email: string, dni: string) =>
+    apiRequest<{ message: string }>(`/appointments/${id}/request-action-code`, {
+      method: 'POST',
+      body: JSON.stringify({ email, dni }),
+    }),
+  cancelWithCode: (id: string, email: string, dni: string, code: string) =>
+    apiRequest<Appointment>(`/appointments/${id}/cancel-with-code`, {
+      method: 'POST',
+      body: JSON.stringify({ email, dni, code }),
+    }),
+  reschedule: (id: string, email: string, dni: string, code: string, timeSlotId: string) =>
+    apiRequest<Appointment>(`/appointments/${id}/reschedule`, {
+      method: 'PUT',
+      body: JSON.stringify({ email, dni, code, timeSlotId }),
+    }),
 };
 
 // Auth API

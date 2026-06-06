@@ -63,6 +63,12 @@ export function Header() {
             >
               Médicos
             </a>
+            <Link
+              to="/mis-turnos"
+              className="text-sm font-medium text-gray-600 hover:text-primary-600 transition-colors"
+            >
+              Mis turnos
+            </Link>
           </nav>
 
           {pendingAppointment ? (
