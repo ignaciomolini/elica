@@ -210,6 +210,8 @@ export async function cancelAppointment(appointmentId: string, patientEmail: str
 }
 
 export async function getAppointmentsByPatient(email: string, dni: string) {
+  await cleanupExpired();
+
   return prisma.appointment.findMany({
     where: { patient: { email, dni } },
     include: {
@@ -220,7 +222,33 @@ export async function getAppointmentsByPatient(email: string, dni: string) {
   });
 }
 
+async function cleanupExpired(): Promise<void> {
+  const expired = await prisma.appointment.findMany({
+    where: {
+      status: "PENDING",
+      verified: false,
+      expiresAt: { lte: new Date() },
+    },
+    select: { id: true, timeSlotId: true },
+  });
+
+  if (expired.length === 0) return;
+
+  const ids = expired.map((e) => e.id);
+  const slotIds = expired.map((e) => e.timeSlotId);
+
+  await prisma.$transaction([
+    prisma.appointment.deleteMany({ where: { id: { in: ids } } }),
+    prisma.timeSlot.updateMany({
+      where: { id: { in: slotIds } },
+      data: { available: true },
+    }),
+  ]);
+}
+
 export async function getDoctorAppointments(doctorId: string) {
+  await cleanupExpired();
+
   return prisma.appointment.findMany({
     where: { doctorId },
     include: {
@@ -231,6 +259,8 @@ export async function getDoctorAppointments(doctorId: string) {
 }
 
 export async function getAllAppointments() {
+  await cleanupExpired();
+
   return prisma.appointment.findMany({
     include: {
       doctor: { select: { id: true, name: true, email: true } },
