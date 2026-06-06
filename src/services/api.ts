@@ -171,9 +171,30 @@ export const adminApi = {
 
   // Appointments
   getAllAppointments: () => apiRequest<Appointment[]>('/admin/appointments'),
+  createAppointment: (data: {
+    doctorId: string;
+    timeSlotId: string;
+    patientName: string;
+    patientEmail: string;
+    patientPhone: string;
+    patientDni: string;
+  }) => apiRequest<Appointment>('/admin/appointments', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
   deleteAppointment: (id: string) =>
     apiRequest<{ message: string }>(`/admin/appointments/${id}`, {
       method: 'DELETE',
+    }),
+  cancelAppointment: (id: string) =>
+    apiRequest<Appointment>(`/admin/appointments/${id}/cancel`, {
+      method: 'PUT',
+      body: JSON.stringify({ status: 'CANCELLED' }),
+    }),
+  rescheduleAppointment: (id: string, timeSlotId: string) =>
+    apiRequest<Appointment>(`/admin/appointments/${id}/reschedule`, {
+      method: 'PUT',
+      body: JSON.stringify({ timeSlotId }),
     }),
 
   // Stats

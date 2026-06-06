@@ -548,6 +548,124 @@ function verifyActionCode(appointment: { actionCode: string | null; actionCodeEx
   }
 }
 
+export async function adminRescheduleAppointment(appointmentId: string, newTimeSlotId: string) {
+  return prisma.$transaction(async (tx) => {
+    const appointment = await tx.appointment.findUnique({
+      where: { id: appointmentId },
+      include: { patient: true, doctor: { select: { name: true } } },
+    });
+
+    if (!appointment) {
+      throw new Error("Turno no encontrado");
+    }
+
+    if (appointment.status === AppointmentStatus.CANCELLED) {
+      throw new Error("El turno ya está cancelado");
+    }
+
+    // Check new slot
+    const newTimeSlot = await tx.timeSlot.findUnique({ where: { id: newTimeSlotId } });
+    if (!newTimeSlot) throw new Error("El nuevo horario no existe");
+    if (newTimeSlot.doctorId !== appointment.doctorId) throw new Error("El horario no pertenece al mismo médico");
+    if (!newTimeSlot.available) throw new Error("El nuevo horario no está disponible");
+
+    const existingForSlot = await tx.appointment.findUnique({ where: { timeSlotId: newTimeSlotId } });
+    if (existingForSlot) throw new Error("El nuevo horario ya está reservado");
+
+    // Free old slot, assign new one
+    await tx.timeSlot.update({ where: { id: appointment.timeSlotId }, data: { available: true } });
+    await tx.timeSlot.update({ where: { id: newTimeSlotId }, data: { available: false } });
+
+    const updated = await tx.appointment.update({
+      where: { id: appointmentId },
+      data: {
+        timeSlotId: newTimeSlotId,
+        date: newTimeSlot.date,
+        startTime: newTimeSlot.startTime,
+        endTime: newTimeSlot.endTime,
+      },
+      include: {
+        doctor: { select: { id: true, name: true } },
+        patient: { select: { id: true, name: true, email: true, phone: true, dni: true } },
+      },
+    });
+
+    const dateStr = newTimeSlot.date.toLocaleDateString("es-AR", {
+      day: "2-digit", month: "2-digit", year: "numeric",
+    });
+    mockSendEmail(
+      appointment.patient.email,
+      "Turno modificado - Elica",
+      `Hola ${appointment.patient.name}, tu turno con ${appointment.doctor.name} fue modificado al ${dateStr} a las ${newTimeSlot.startTime}.`
+    );
+
+    return updated;
+  });
+}
+
+export async function createConfirmedAppointment(input: {
+  doctorId: string;
+  timeSlotId: string;
+  patientName: string;
+  patientEmail: string;
+  patientPhone: string;
+  patientDni: string;
+}) {
+  return prisma.$transaction(async (tx) => {
+    const { doctorId, timeSlotId, patientName, patientEmail, patientPhone, patientDni } = input;
+
+    const timeSlot = await tx.timeSlot.findUnique({ where: { id: timeSlotId } });
+    if (!timeSlot) throw new Error("Horario no encontrado");
+    if (timeSlot.doctorId !== doctorId) throw new Error("El horario no pertenece a este médico");
+    if (!timeSlot.available) throw new Error("El horario no está disponible");
+
+    const existing = await tx.appointment.findUnique({ where: { timeSlotId } });
+    if (existing) throw new Error("El horario ya está reservado");
+
+    let patient = await tx.patient.findFirst({
+      where: { email: patientEmail, dni: patientDni },
+    });
+    if (!patient) {
+      patient = await tx.patient.create({
+        data: { name: patientName, email: patientEmail, phone: patientPhone, dni: patientDni },
+      });
+    }
+
+    const appointment = await tx.appointment.create({
+      data: {
+        doctorId,
+        patientId: patient.id,
+        timeSlotId,
+        date: timeSlot.date,
+        startTime: timeSlot.startTime,
+        endTime: timeSlot.endTime,
+        status: AppointmentStatus.CONFIRMED,
+        verified: true,
+      },
+      include: {
+        doctor: { select: { id: true, name: true } },
+        patient: { select: { id: true, name: true, email: true, phone: true, dni: true } },
+      },
+    });
+
+    await tx.timeSlot.update({
+      where: { id: timeSlotId },
+      data: { available: false },
+    });
+
+    const dateStr = timeSlot.date.toLocaleDateString("es-AR", {
+      day: "2-digit", month: "2-digit", year: "numeric",
+    });
+    mockSendEmail(
+      patientEmail,
+      "Turno confirmado - Elica",
+      `Hola ${patientName}, tu turno con el Dr. ${appointment.doctor.name} fue registrado para el ${dateStr} a las ${timeSlot.startTime}.`
+    );
+
+    return appointment;
+  });
+}
+
 export async function resendVerificationCode(appointmentId: string, email: string, dni: string) {
   const appointment = await prisma.appointment.findUnique({
     where: { id: appointmentId },

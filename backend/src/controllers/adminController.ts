@@ -1,7 +1,25 @@
 import { Request, Response, NextFunction } from "express";
+import { z } from "zod";
 import * as specialtyService from "../services/specialtyService.js";
 import * as doctorService from "../services/doctorService.js";
 import * as appointmentService from "../services/appointmentService.js";
+
+const cancelSchema = z.object({
+  status: z.literal("CANCELLED"),
+});
+
+const rescheduleSchema = z.object({
+  timeSlotId: z.string().min(1, "El ID del nuevo horario es requerido"),
+});
+
+const createAppointmentSchema = z.object({
+  doctorId: z.string().min(1, "El ID del médico es requerido"),
+  timeSlotId: z.string().min(1, "El ID del horario es requerido"),
+  patientName: z.string().min(2, "El nombre debe tener al menos 2 caracteres"),
+  patientEmail: z.string().email("Formato de correo inválido"),
+  patientPhone: z.string().min(8, "El teléfono debe tener al menos 8 caracteres"),
+  patientDni: z.string().min(7, "El DNI debe tener al menos 7 caracteres").max(10),
+});
 
 // Specialties
 export async function getSpecialties(_req: Request, res: Response, next: NextFunction) {
@@ -92,7 +110,6 @@ export async function getAppointments(_req: Request, res: Response, next: NextFu
   }
 }
 
-// Stats
 export async function deleteAppointment(req: Request, res: Response, next: NextFunction) {
   try {
     const id = req.params.id as string;
@@ -103,6 +120,39 @@ export async function deleteAppointment(req: Request, res: Response, next: NextF
   }
 }
 
+export async function cancelAppointment(req: Request, res: Response, next: NextFunction) {
+  try {
+    const id = req.params.id as string;
+    cancelSchema.parse(req.body);
+    const result = await appointmentService.updateAppointmentStatus(id, "CANCELLED" as any);
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function rescheduleAppointment(req: Request, res: Response, next: NextFunction) {
+  try {
+    const id = req.params.id as string;
+    const { timeSlotId } = rescheduleSchema.parse(req.body);
+    const result = await appointmentService.adminRescheduleAppointment(id, timeSlotId);
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function createAppointment(req: Request, res: Response, next: NextFunction) {
+  try {
+    const input = createAppointmentSchema.parse(req.body);
+    const result = await appointmentService.createConfirmedAppointment(input);
+    res.status(201).json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+// Stats
 export async function getStats(_req: Request, res: Response, next: NextFunction) {
   try {
     const [totalDoctors, totalSpecialties, totalAppointments, pendingAppointments] = await Promise.all([

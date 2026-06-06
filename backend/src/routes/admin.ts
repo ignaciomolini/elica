@@ -17,7 +17,10 @@ router.delete("/doctors/:id", adminController.deleteDoctor);
 
 // Appointments
 router.get("/appointments", adminController.getAppointments);
+router.post("/appointments", adminController.createAppointment);
 router.delete("/appointments/:id", adminController.deleteAppointment);
+router.put("/appointments/:id/cancel", adminController.cancelAppointment);
+router.put("/appointments/:id/reschedule", adminController.rescheduleAppointment);
 
 // Stats
 router.get("/stats", adminController.getStats);
