@@ -1,5 +1,6 @@
 import prisma from "../lib/prisma.js";
-import { generateCode, mockSendCode, mockSendEmail } from "../utils/verification.js";
+import { generateCode } from "../utils/verification.js";
+import { sendAndForget } from "./emailService.js";
 import { AppointmentStatus } from "@prisma/client";
 import crypto from "crypto";
 
@@ -15,7 +16,7 @@ interface CreateAppointmentInput {
 export async function createAppointment(input: CreateAppointmentInput) {
   const { doctorId, timeSlotId, patientName, patientEmail, patientPhone, patientDni } = input;
 
-  return prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     // Check slot availability
     const timeSlot = await tx.timeSlot.findUnique({
       where: { id: timeSlotId },
@@ -63,12 +64,17 @@ export async function createAppointment(input: CreateAppointmentInput) {
       throw new Error("El horario ya no está disponible");
     }
 
-    // Find or create patient by email + dni
-    let patient = await tx.patient.findFirst({
-      where: { email: patientEmail, dni: patientDni },
+    // Upsert patient by dni: update if exists, create if not
+    let patient = await tx.patient.findUnique({
+      where: { dni: patientDni },
     });
 
-    if (!patient) {
+    if (patient) {
+      patient = await tx.patient.update({
+        where: { dni: patientDni },
+        data: { name: patientName, email: patientEmail, phone: patientPhone },
+      });
+    } else {
       patient = await tx.patient.create({
         data: {
           name: patientName,
@@ -112,15 +118,26 @@ export async function createAppointment(input: CreateAppointmentInput) {
       data: { available: false },
     });
 
-    // Mock send verification code
-    mockSendCode(verificationCode, patientPhone);
-
     return {
       ...appointment,
       verificationCode, // returned in mock mode for testing
       verificationToken,
     };
   });
+
+  // Fire-and-forget email AFTER transaction commit
+  const dateStr = result.date.toLocaleDateString("es-AR", {
+    day: "2-digit", month: "2-digit", year: "numeric",
+  });
+  sendAndForget(
+    patientEmail,
+    "Verifica tu turno - Elica",
+    `Hola ${patientName}, tu código de verificación es: ${result.verificationCode}\n` +
+    `Turno con ${result.doctor.name} - ${dateStr} a las ${result.startTime}\n` +
+    `El código vence en 5 minutos.`
+  );
+
+  return result;
 }
 
 export async function verifyAppointment(appointmentId: string, code: string) {
@@ -169,10 +186,20 @@ export async function verifyAppointment(appointmentId: string, code: string) {
     }),
   ]);
 
+  // Fire-and-forget confirmation email AFTER transaction commit
+  const dateStr = appointment.date.toLocaleDateString("es-AR", {
+    day: "2-digit", month: "2-digit", year: "numeric",
+  });
+  sendAndForget(
+    updatedAppointment.patient.email,
+    "Turno confirmado - Elica",
+    `Hola ${updatedAppointment.patient.name}, tu turno con ${updatedAppointment.doctor.name} del ${dateStr} a las ${appointment.startTime} ha sido confirmado.`
+  );
+
   return updatedAppointment;
 }
 
-export async function cancelAppointment(appointmentId: string, patientEmail: string, patientDni: string) {
+export async function cancelAppointment(appointmentId: string, patientDni: string) {
   const appointment = await prisma.appointment.findUnique({
     where: { id: appointmentId },
     include: { patient: true },
@@ -182,7 +209,7 @@ export async function cancelAppointment(appointmentId: string, patientEmail: str
     throw new Error("Turno no encontrado");
   }
 
-  if (appointment.patient.email !== patientEmail || appointment.patient.dni !== patientDni) {
+  if (appointment.patient.dni !== patientDni) {
     throw new Error("No está autorizado para cancelar este turno");
   }
 
@@ -206,14 +233,24 @@ export async function cancelAppointment(appointmentId: string, patientEmail: str
     }),
   ]);
 
+  // Fire-and-forget cancellation email AFTER transaction commit
+  const dateStr = appointment.date.toLocaleDateString("es-AR", {
+    day: "2-digit", month: "2-digit", year: "numeric",
+  });
+  sendAndForget(
+    updatedAppointment.patient.email,
+    "Turno cancelado - Elica",
+    `Hola ${updatedAppointment.patient.name}, tu turno con ${updatedAppointment.doctor.name} del ${dateStr} a las ${appointment.startTime} ha sido cancelado.`
+  );
+
   return updatedAppointment;
 }
 
-export async function getAppointmentsByPatient(email: string, dni: string) {
+export async function getAppointmentsByPatient(dni: string) {
   await cleanupExpired();
 
   return prisma.appointment.findMany({
-    where: { patient: { email, dni } },
+    where: { patient: { dni } },
     include: {
         doctor: { select: { id: true, name: true, avatar: true, specialties: { select: { id: true, name: true } } } },
       patient: { select: { id: true, name: true, email: true, phone: true, dni: true } },
@@ -292,21 +329,12 @@ export async function updateAppointmentStatus(
     },
   });
 
-  // If cancelled, free the slot and notify patient
+  // If cancelled, free the slot
   if (status === AppointmentStatus.CANCELLED) {
     await prisma.timeSlot.update({
       where: { id: appointment.timeSlotId },
       data: { available: true },
     });
-
-    const dateStr = appointment.date.toLocaleDateString("es-AR", {
-      day: "2-digit", month: "2-digit", year: "numeric",
-    });
-    mockSendEmail(
-      appointment.patient.email,
-      "Turno cancelado - Elica",
-      `Hola ${appointment.patient.name}, tu turno con ${appointment.doctor.name} del ${dateStr} a las ${appointment.startTime} fue cancelado.`
-    );
   }
 
   return updated;
@@ -341,10 +369,10 @@ export async function countAppointmentsByStatus(status: AppointmentStatus) {
   return prisma.appointment.count({ where: { status } });
 }
 
-export async function getPendingAppointment(email: string, dni: string) {
+export async function getPendingAppointment(dni: string) {
   const appointment = await prisma.appointment.findFirst({
     where: {
-      patient: { email, dni },
+      patient: { dni },
       status: "PENDING",
       verified: false,
     },
@@ -379,7 +407,7 @@ export async function getPendingAppointment(email: string, dni: string) {
   };
 }
 
-export async function requestActionCode(appointmentId: string, email: string, dni: string) {
+export async function requestActionCode(appointmentId: string, dni: string) {
   const appointment = await prisma.appointment.findUnique({
     where: { id: appointmentId },
     include: { patient: true },
@@ -389,7 +417,7 @@ export async function requestActionCode(appointmentId: string, email: string, dn
     throw new Error("Turno no encontrado");
   }
 
-  if (appointment.patient.email !== email || appointment.patient.dni !== dni) {
+  if (appointment.patient.dni !== dni) {
     throw new Error("No está autorizado para realizar esta acción");
   }
 
@@ -407,12 +435,18 @@ export async function requestActionCode(appointmentId: string, email: string, dn
     data: { actionCode, actionCodeExpiresAt },
   });
 
-  mockSendCode(actionCode, appointment.patient.phone);
+  // Fire-and-forget action code email AFTER DB update
+  sendAndForget(
+    appointment.patient.email,
+    "Código de acción - Elica",
+    `Hola ${appointment.patient.name}, tu código de acción es: ${actionCode}\n` +
+    `Este código vence en 15 minutos.`
+  );
 
   return { message: "Código enviado correctamente" };
 }
 
-export async function cancelWithCode(appointmentId: string, email: string, dni: string, code: string) {
+export async function cancelWithCode(appointmentId: string, dni: string, code: string) {
   const appointment = await prisma.appointment.findUnique({
     where: { id: appointmentId },
     include: { patient: true },
@@ -422,7 +456,7 @@ export async function cancelWithCode(appointmentId: string, email: string, dni: 
     throw new Error("Turno no encontrado");
   }
 
-  if (appointment.patient.email !== email || appointment.patient.dni !== dni) {
+  if (appointment.patient.dni !== dni) {
     throw new Error("No está autorizado para cancelar este turno");
   }
 
@@ -448,12 +482,21 @@ export async function cancelWithCode(appointmentId: string, email: string, dni: 
     }),
   ]);
 
+  // Fire-and-forget cancellation email AFTER transaction commit
+  const dateStr = appointment.date.toLocaleDateString("es-AR", {
+    day: "2-digit", month: "2-digit", year: "numeric",
+  });
+  sendAndForget(
+    updatedAppointment.patient.email,
+    "Turno cancelado - Elica",
+    `Hola ${updatedAppointment.patient.name}, tu turno con ${updatedAppointment.doctor.name} del ${dateStr} a las ${appointment.startTime} ha sido cancelado.`
+  );
+
   return updatedAppointment;
 }
 
 export async function rescheduleAppointment(
   appointmentId: string,
-  email: string,
   dni: string,
   code: string,
   newTimeSlotId: string
@@ -468,7 +511,7 @@ export async function rescheduleAppointment(
       throw new Error("Turno no encontrado");
     }
 
-    if (appointment.patient.email !== email || appointment.patient.dni !== dni) {
+    if (appointment.patient.dni !== dni) {
       throw new Error("No está autorizado para modificar este turno");
     }
 
@@ -590,15 +633,6 @@ export async function adminRescheduleAppointment(appointmentId: string, newTimeS
       },
     });
 
-    const dateStr = newTimeSlot.date.toLocaleDateString("es-AR", {
-      day: "2-digit", month: "2-digit", year: "numeric",
-    });
-    mockSendEmail(
-      appointment.patient.email,
-      "Turno modificado - Elica",
-      `Hola ${appointment.patient.name}, tu turno con ${appointment.doctor.name} fue modificado al ${dateStr} a las ${newTimeSlot.startTime}.`
-    );
-
     return updated;
   });
 }
@@ -622,10 +656,15 @@ export async function createConfirmedAppointment(input: {
     const existing = await tx.appointment.findUnique({ where: { timeSlotId } });
     if (existing) throw new Error("El horario ya está reservado");
 
-    let patient = await tx.patient.findFirst({
-      where: { email: patientEmail, dni: patientDni },
+    let patient = await tx.patient.findUnique({
+      where: { dni: patientDni },
     });
-    if (!patient) {
+    if (patient) {
+      patient = await tx.patient.update({
+        where: { dni: patientDni },
+        data: { name: patientName, email: patientEmail, phone: patientPhone },
+      });
+    } else {
       patient = await tx.patient.create({
         data: { name: patientName, email: patientEmail, phone: patientPhone, dni: patientDni },
       });
@@ -653,20 +692,11 @@ export async function createConfirmedAppointment(input: {
       data: { available: false },
     });
 
-    const dateStr = timeSlot.date.toLocaleDateString("es-AR", {
-      day: "2-digit", month: "2-digit", year: "numeric",
-    });
-    mockSendEmail(
-      patientEmail,
-      "Turno confirmado - Elica",
-      `Hola ${patientName}, tu turno con el Dr. ${appointment.doctor.name} fue registrado para el ${dateStr} a las ${timeSlot.startTime}.`
-    );
-
     return appointment;
   });
 }
 
-export async function resendVerificationCode(appointmentId: string, email: string, dni: string) {
+export async function resendVerificationCode(appointmentId: string, dni: string) {
   const appointment = await prisma.appointment.findUnique({
     where: { id: appointmentId },
     include: { patient: true },
@@ -676,7 +706,7 @@ export async function resendVerificationCode(appointmentId: string, email: strin
     throw new Error("Turno no encontrado");
   }
 
-  if (appointment.patient.email !== email || appointment.patient.dni !== dni) {
+  if (appointment.patient.dni !== dni) {
     throw new Error("No está autorizado para este turno");
   }
 
@@ -711,8 +741,13 @@ export async function resendVerificationCode(appointmentId: string, email: strin
     },
   });
 
-  // Send code (mock)
-  mockSendCode(newCode, appointment.patient.phone);
+  // Fire-and-forget verification code email AFTER DB update
+  sendAndForget(
+    appointment.patient.email,
+    "Código de verificación - Elica",
+    `Hola ${appointment.patient.name}, tu nuevo código de verificación es: ${newCode}\n` +
+    `El código vence en 5 minutos.`
+  );
 
   return { message: "Código reenviado correctamente" };
 }

@@ -8,11 +8,11 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantClasses: Record<string, string> = {
   primary:
-    'bg-primary-600 text-white hover:bg-primary-700 focus-visible:ring-primary-500',
+    'bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-primary',
   secondary:
-    'bg-accent-600 text-white hover:bg-accent-700 focus-visible:ring-accent-500',
+    'bg-accent text-accent-foreground hover:bg-accent/90 focus-visible:ring-accent',
   outline:
-    'border-2 border-primary-600 text-primary-600 hover:bg-primary-50 focus-visible:ring-primary-500',
+    'border-2 border-primary text-primary hover:bg-primary/5 focus-visible:ring-primary',
 };
 
 const sizeClasses: Record<string, string> = {

@@ -1,0 +1,36 @@
+# SDD Configuration — elica
+# Generated: 2026-06-08
+# Mode: hybrid
+
+context: |
+  Medical appointment booking system (turnos médicos).
+  Frontend: React 19 + Vite 8 + TypeScript 6 + Tailwind CSS v4 + TanStack Router + Zustand 5.
+  Backend: Express 5 + TypeScript + Prisma 6 + PostgreSQL + Zod 4.
+  Architecture: Routes/Controllers/Services (backend); file-based routing + stores + API service (frontend).
+
+strict_tdd: false
+
+testing:
+  runner: none
+  layers:
+    unit: false
+    integration: false
+    e2e: false
+  coverage: false
+  linter: eslint
+  type_checker: tsc
+  formatter: none
+
+phases:
+  - propose
+  - spec
+  - design
+  - tasks
+  - apply
+  - verify
+  - archive
+
+persistence:
+  mode: hybrid
+  engram: true
+  openspec: true

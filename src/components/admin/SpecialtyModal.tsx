@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { Specialty, SpecialtyFormData } from '../../types';
+import { SpecialtyIcon, iconKeys } from '../ui/SpecialtyIcon';
 
 interface SpecialtyModalProps {
   specialty: Specialty | null;
@@ -13,7 +14,7 @@ export function SpecialtyModal({ specialty, onSave, onClose }: SpecialtyModalPro
   const [form, setForm] = useState<SpecialtyFormData>({
     name: '',
     description: '',
-    icon: '',
+    icon: iconKeys[0],
   });
 
   useEffect(() => {
@@ -21,7 +22,7 @@ export function SpecialtyModal({ specialty, onSave, onClose }: SpecialtyModalPro
       setForm({
         name: specialty.name,
         description: specialty.description,
-        icon: specialty.icon,
+        icon: specialty.icon || iconKeys[0],
       });
     }
   }, [specialty]);
@@ -43,7 +44,7 @@ export function SpecialtyModal({ specialty, onSave, onClose }: SpecialtyModalPro
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
+      <div className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6 border-b">
           <h2 className="text-xl font-bold text-gray-900">
             {specialty ? 'Editar especialidad' : 'Nueva especialidad'}
@@ -66,7 +67,7 @@ export function SpecialtyModal({ specialty, onSave, onClose }: SpecialtyModalPro
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Descripcion
+              Descripción
             </label>
             <textarea
               value={form.description}
@@ -78,16 +79,28 @@ export function SpecialtyModal({ specialty, onSave, onClose }: SpecialtyModalPro
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Icono (emoji o URL)
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Ícono
             </label>
-            <input
-              type="text"
-              value={form.icon}
-              onChange={(e) => setForm({ ...form, icon: e.target.value })}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
-            />
+            <div className="grid grid-cols-6 gap-2">
+              {iconKeys.map((key) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setForm({ ...form, icon: key })}
+                  className={`
+                    p-2 rounded-lg border-2 transition-all flex items-center justify-center
+                    ${form.icon === key
+                      ? 'border-primary-500 bg-primary-50 text-primary-600'
+                      : 'border-gray-200 hover:border-gray-300 text-gray-500 hover:text-gray-700'
+                    }
+                  `}
+                  title={key}
+                >
+                  <SpecialtyIcon name={key} className="w-5 h-5" />
+                </button>
+              ))}
+            </div>
           </div>
 
           {error && (

@@ -50,8 +50,8 @@ export function Verification() {
       }
 
       try {
-        const { email, dni } = JSON.parse(stored);
-        const found = await recoverPending(email, dni);
+        const { dni } = JSON.parse(stored);
+        const found = await recoverPending(dni);
         if (!found) {
           localStorage.removeItem('pendingAppointment');
         }
@@ -131,14 +131,13 @@ export function Verification() {
   const handleCancel = async () => {
     if (!appointment) return;
 
-    const email = appointment.patient?.email;
     const dni = appointment.patient?.dni;
 
-    if (!email || !dni) return;
+    if (!dni) return;
 
     setCancelling(true);
     try {
-      await appointmentsApi.cancel(appointment.id, email, dni);
+      await appointmentsApi.cancel(appointment.id, dni);
       localStorage.removeItem('pendingAppointment');
       useBookingStore.getState().resetBooking();
       clearPending();
@@ -153,11 +152,9 @@ export function Verification() {
   const handleResendCode = async () => {
     if (!appointment) return;
 
-    // Try to get email/dni from appointment patient data
-    const email = appointment.patient?.email;
     const dni = appointment.patient?.dni;
 
-    if (!email || !dni) {
+    if (!dni) {
       setResendMessage('No se puede reenviar el código. Por favor, reserve nuevamente.');
       return;
     }
@@ -165,9 +162,9 @@ export function Verification() {
     setResending(true);
     setResendMessage(null);
     try {
-      await appointmentsApi.resendCode(appointment.id, email, dni);
+      await appointmentsApi.resendCode(appointment.id, dni);
       // Refresh appointment to get new expiresAt
-      const result = await appointmentsApi.getPending(email, dni);
+      const result = await appointmentsApi.getPending(dni);
       if (result.appointment) {
         useBookingStore.getState().setAppointment(result.appointment);
       }

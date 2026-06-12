@@ -95,16 +95,16 @@ export const useBookingStore = create<BookingState>((set, get) => ({
     }
   },
 
-  recoverPending: async (email: string, dni: string) => {
+  recoverPending: async (dni: string) => {
     set({ isLoading: true, error: null });
     try {
-      const result = await appointmentsApi.getPending(email, dni);
+      const result = await appointmentsApi.getPending(dni);
       if (result.appointment) {
         set({
           appointment: result.appointment,
           patientInfo: {
             name: result.appointment.patient?.name ?? '',
-            email: result.appointment.patient?.email ?? email,
+            email: result.appointment.patient?.email ?? '',
             phone: result.appointment.patient?.phone ?? '',
             dni: result.appointment.patient?.dni ?? dni,
           },

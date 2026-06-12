@@ -134,7 +134,6 @@ export function Booking() {
           'pendingAppointment',
           JSON.stringify({
             appointmentId: appointment.id,
-            email: patientInfo.email,
             dni: patientInfo.dni,
           }),
         );

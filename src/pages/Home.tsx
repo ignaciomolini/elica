@@ -1,24 +1,17 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from '@tanstack/react-router';
+import { Link } from '@tanstack/react-router';
 import { specialtiesApi } from '../services/api';
-import { useBookingStore } from '../store';
 import type { Specialty } from '../types';
 import { Button } from '../components/ui/Button';
+import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
+import { CardDescription } from '../components/ui/card';
+import { Badge } from '../components/ui/badge';
+import { SpecialtyIcon } from '../components/ui/SpecialtyIcon';
 
 export function Home() {
-  const navigate = useNavigate();
   const [specialties, setSpecialties] = useState<Specialty[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // Recovery state
-  const [showRecovery, setShowRecovery] = useState(false);
-  const [recoveryEmail, setRecoveryEmail] = useState('');
-  const [recoveryDni, setRecoveryDni] = useState('');
-  const [recovering, setRecovering] = useState(false);
-  const [recoveryError, setRecoveryError] = useState<string | null>(null);
-
-  const recoverPending = useBookingStore((s) => s.recoverPending);
 
   useEffect(() => {
     specialtiesApi
@@ -28,47 +21,19 @@ export function Home() {
       .finally(() => setLoading(false));
   }, []);
 
-  const handleRecover = async () => {
-    if (!recoveryEmail.trim() || !recoveryDni.trim()) {
-      setRecoveryError('Email y DNI son requeridos');
-      return;
-    }
-
-    setRecovering(true);
-    setRecoveryError(null);
-    try {
-      const found = await recoverPending(recoveryEmail.trim(), recoveryDni.trim());
-
-      if (found) {
-        localStorage.setItem(
-          'pendingAppointment',
-          JSON.stringify({
-            appointmentId: useBookingStore.getState().appointment?.id,
-            email: recoveryEmail.trim(),
-            dni: recoveryDni.trim(),
-          }),
-        );
-        navigate({ to: '/verificacion' });
-      } else {
-        setRecoveryError('No se encontraron turnos pendientes');
-      }
-    } catch (err) {
-      setRecoveryError(err instanceof Error ? err.message : 'Error al recuperar turno');
-    } finally {
-      setRecovering(false);
-    }
-  };
-
   return (
     <div>
-      {/* Hero Section */}
-      <section className="bg-linear-to-br from-primary-600 to-primary-800 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
-          <div className="max-w-2xl">
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight mb-6">
+      {/* Hero */}
+      <section className="relative overflow-hidden bg-gradient-to-br from-muted via-background to-muted/50 py-20 sm:py-28 px-6">
+        {/* Glass accent blob */}
+        <div className="absolute -top-40 -right-40 w-96 h-96 rounded-full bg-accent/20 blur-3xl" aria-hidden="true" />
+        <div className="absolute -bottom-20 -left-20 w-72 h-72 rounded-full bg-primary/10 blur-3xl" aria-hidden="true" />
+        <div className="relative max-w-6xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
+          <div>
+            <h1 className="text-4xl lg:text-5xl font-bold text-foreground leading-tight mb-6">
               Reservá tu turno médico de forma simple
             </h1>
-            <p className="text-lg sm:text-xl text-primary-100 mb-8 leading-relaxed">
+            <p className="text-muted-foreground text-lg mb-8 max-w-lg">
               Elegí la especialidad, seleccioná tu médico preferido y reservá el
               horario que mejor se adapte a vos. Sin llamadas, sin esperas.
             </p>
@@ -78,29 +43,43 @@ export function Home() {
               </Button>
             </Link>
           </div>
+          <div className="hidden lg:flex items-center justify-center">
+            <img src="/logo.svg" alt="" className="w-64 h-auto opacity-10" aria-hidden="true" />
+          </div>
         </div>
       </section>
 
       {/* Specialties Preview */}
-      <section className="py-16 sm:py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 text-center mb-4">
+      <section className="py-16 px-6">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-3xl font-bold text-foreground mb-3">
             Nuestras especialidades
           </h2>
-          <p className="text-gray-600 text-center mb-12 max-w-2xl mx-auto">
+          <p className="text-muted-foreground mb-10 max-w-2xl">
             Contamos con un equipo de profesionales capacitados en diversas
-              áreas de la salud para cuidar de vos y tu familia.
+            áreas de la salud para cuidar de vos y tu familia.
           </p>
 
           {loading && (
-            <div className="text-center py-8">
-              <p className="text-gray-500">Cargando especialidades...</p>
+            <div className="grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3].map((i) => (
+                <Card key={i} className="animate-pulse">
+                  <CardHeader>
+                    <div className="w-6 h-6 bg-muted rounded" />
+                    <div className="h-4 bg-muted rounded w-2/3" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-3 bg-muted rounded w-full mb-2" />
+                    <div className="h-3 bg-muted rounded w-4/5" />
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           )}
 
           {error && (
             <div className="text-center py-8">
-              <p className="text-red-500 mb-4">{error}</p>
+              <p className="text-destructive mb-4">{error}</p>
               <Button variant="outline" onClick={() => window.location.reload()}>
                 Reintentar
               </Button>
@@ -109,41 +88,27 @@ export function Home() {
 
           {!loading && !error && (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {specialties.map((specialty) => (
-                  <div
-                    key={specialty.id}
-                    className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md hover:border-primary-200 transition-all duration-200"
-                  >
-                    <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center mb-4">
-                      <svg
-                        className="w-6 h-6 text-primary-600"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        aria-hidden="true"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                        />
-                      </svg>
-                    </div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                      {specialty.name}
-                    </h3>
-                    <p className="text-sm text-gray-600 leading-relaxed">
-                      {specialty.description}
-                    </p>
-                  </div>
+                  <Card key={specialty.id} className="hover:shadow-md transition-shadow">
+                    <CardHeader>
+                      <div className="flex items-center gap-3">
+                        <SpecialtyIcon name={specialty.icon} className="w-6 h-6 text-primary" />
+                        <CardTitle>{specialty.name}</CardTitle>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <CardDescription>{specialty.description}</CardDescription>
+                    </CardContent>
+                  </Card>
                 ))}
               </div>
 
-              <div className="text-center mt-10">
+              <div className="mt-8 text-center">
                 <Link to="/especialidades">
-                  <Button variant="outline">Ver todas las especialidades</Button>
+                  <Button variant="outline">
+                    Ver todas las especialidades
+                  </Button>
                 </Link>
               </div>
             </>
@@ -151,96 +116,26 @@ export function Home() {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="bg-accent-50 py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4">
-            Tu salud es lo primero
-          </h2>
-          <p className="text-gray-600 mb-8 max-w-xl mx-auto">
-            No esperés más para cuidar de vos. Reservá tu turno en menos de 2
-            minutos y recibí confirmación inmediata.
-          </p>
-          <Link to="/especialidades">
-            <Button size="lg">Comenzar reserva</Button>
-          </Link>
-        </div>
-      </section>
-
-      {/* Recovery Section */}
-      <section className="py-12 border-t border-gray-100">
-        <div className="max-w-md mx-auto px-4 sm:px-6 text-center">
-          <button
-            type="button"
-            onClick={() => {
-              setShowRecovery(!showRecovery);
-              setRecoveryError(null);
-            }}
-            className="text-primary-600 hover:text-primary-700 font-medium text-sm"
-          >
-            ¿Ya reservaste? Continuar verificación
-          </button>
-
-          {showRecovery && (
-            <div className="mt-4 p-5 bg-white rounded-xl shadow-sm border border-gray-100 text-left space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900">
-                Recuperar turno pendiente
-              </h3>
-              <p className="text-sm text-gray-600">
-                Ingresá tus datos para continuar con la verificación de tu turno.
-              </p>
-
-              <div>
-                <label
-                  htmlFor="recovery-email"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  Correo electrónico
-                </label>
-                <input
-                  id="recovery-email"
-                  type="email"
-                  placeholder="Ej: juan@email.com"
-                  value={recoveryEmail}
-                  onChange={(e) => setRecoveryEmail(e.target.value)}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="recovery-dni"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  DNI
-                </label>
-                <input
-                  id="recovery-dni"
-                  type="text"
-                  placeholder="Ej: 12345678"
-                  value={recoveryDni}
-                  onChange={(e) => setRecoveryDni(e.target.value)}
-                  maxLength={10}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                />
-              </div>
-
-              {recoveryError && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                  <p className="text-sm text-red-600">{recoveryError}</p>
-                </div>
-              )}
-
-              <Button
-                variant="primary"
-                className="w-full"
-                disabled={recovering}
-                onClick={handleRecover}
-              >
-                {recovering ? 'Buscando...' : 'Recuperar turno'}
-              </Button>
-            </div>
-          )}
+      {/* Location */}
+      <section className="relative overflow-hidden bg-gradient-to-br from-muted via-background to-muted/50 py-16 px-6">
+        <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-accent/10 blur-3xl" aria-hidden="true" />
+        <div className="relative max-w-6xl mx-auto">
+          <div className="text-center mb-10">
+            <h2 className="text-3xl font-bold text-foreground mb-3">Dónde estamos</h2>
+            <p className="text-muted-foreground max-w-lg mx-auto">
+              Hermanos Ros 3246, Lanús Oeste, Provincia de Buenos Aires
+            </p>
+          </div>
+          <div className="rounded-2xl overflow-hidden border border-border shadow-sm">
+            <iframe
+              title="Ubicación Elica"
+              src="https://maps.google.com/maps?width=100%25&height=400&hl=es&q=Hermanos%20Ros%203246%2C%20Lan%C3%BAs%20Oeste%2C%20Buenos%20Aires&t=&z=15&ie=UTF8&iwloc=B&output=embed"
+              width="100%"
+              height="400"
+              loading="lazy"
+              className="w-full"
+            />
+          </div>
         </div>
       </section>
     </div>

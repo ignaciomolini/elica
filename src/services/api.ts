@@ -82,40 +82,40 @@ export const appointmentsApi = {
       method: 'POST',
       body: JSON.stringify({ appointmentId, code }),
     }),
-  getPending: (email: string, dni: string) =>
+  getPending: (dni: string) =>
     apiRequest<{ appointment: Appointment | null }>(
-      `/appointments/pending?email=${encodeURIComponent(email)}&dni=${encodeURIComponent(dni)}`,
+      `/appointments/pending?dni=${encodeURIComponent(dni)}`,
     ),
   getPendingByToken: () =>
     apiRequest<{ appointment: Appointment | null }>('/appointments/pending-by-token'),
-  resendCode: (id: string, email: string, dni: string) =>
+  resendCode: (id: string, dni: string) =>
     apiRequest<{ message: string }>(`/appointments/${id}/resend-code`, {
       method: 'POST',
-      body: JSON.stringify({ email, dni }),
+      body: JSON.stringify({ dni }),
     }),
-  getByPatient: (email: string, dni: string) =>
+  getByPatient: (dni: string) =>
     apiRequest<Appointment[]>(
-      `/appointments?email=${encodeURIComponent(email)}&dni=${encodeURIComponent(dni)}`,
+      `/appointments?dni=${encodeURIComponent(dni)}`,
     ),
-  cancel: (id: string, email: string, dni: string) =>
+  cancel: (id: string, dni: string) =>
     apiRequest<Appointment>(`/appointments/${id}`, {
       method: 'DELETE',
-      body: JSON.stringify({ email, dni }),
+      body: JSON.stringify({ dni }),
     }),
-  requestActionCode: (id: string, email: string, dni: string) =>
+  requestActionCode: (id: string, dni: string) =>
     apiRequest<{ message: string }>(`/appointments/${id}/request-action-code`, {
       method: 'POST',
-      body: JSON.stringify({ email, dni }),
+      body: JSON.stringify({ dni }),
     }),
-  cancelWithCode: (id: string, email: string, dni: string, code: string) =>
+  cancelWithCode: (id: string, dni: string, code: string) =>
     apiRequest<Appointment>(`/appointments/${id}/cancel-with-code`, {
       method: 'POST',
-      body: JSON.stringify({ email, dni, code }),
+      body: JSON.stringify({ dni, code }),
     }),
-  reschedule: (id: string, email: string, dni: string, code: string, timeSlotId: string) =>
+  reschedule: (id: string, dni: string, code: string, timeSlotId: string) =>
     apiRequest<Appointment>(`/appointments/${id}/reschedule`, {
       method: 'PUT',
-      body: JSON.stringify({ email, dni, code, timeSlotId }),
+      body: JSON.stringify({ dni, code, timeSlotId }),
     }),
 };
 

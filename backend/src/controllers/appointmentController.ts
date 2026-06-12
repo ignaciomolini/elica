@@ -42,9 +42,6 @@ const updateStatusSchema = z.object({
 });
 
 const cancelAppointmentSchema = z.object({
-  email: z.string({
-    error: "El correo es requerido",
-  }).email("Formato de correo inválido"),
   dni: z.string({
     error: "El DNI es requerido",
   }).min(7, "El DNI debe tener al menos 7 caracteres")
@@ -86,15 +83,14 @@ export async function verify(req: Request, res: Response, next: NextFunction) {
 
 export async function getByPatient(req: Request, res: Response, next: NextFunction) {
   try {
-    const email = req.query.email as string;
     const dni = req.query.dni as string;
 
-    if (!email || !dni) {
-      res.status(400).json({ error: "El correo y DNI son requeridos como parámetros de consulta" });
+    if (!dni) {
+      res.status(400).json({ error: "El DNI es requerido como parámetro de consulta" });
       return;
     }
 
-    const appointments = await appointmentService.getAppointmentsByPatient(email, dni);
+    const appointments = await appointmentService.getAppointmentsByPatient(dni);
     res.json(appointments);
   } catch (err) {
     next(err);
@@ -104,8 +100,8 @@ export async function getByPatient(req: Request, res: Response, next: NextFuncti
 export async function cancel(req: Request, res: Response, next: NextFunction) {
   try {
     const id = req.params.id as string;
-    const { email, dni } = cancelAppointmentSchema.parse(req.body);
-    const appointment = await appointmentService.cancelAppointment(id, email, dni);
+    const { dni } = cancelAppointmentSchema.parse(req.body);
+    const appointment = await appointmentService.cancelAppointment(id, dni);
     // Clear the verification cookie when cancelling
     res.clearCookie("verification_token");
     res.json(appointment);
@@ -157,15 +153,14 @@ export async function updateStatus(req: Request, res: Response, next: NextFuncti
 
 export async function getPending(req: Request, res: Response, next: NextFunction) {
   try {
-    const { email, dni } = req.query;
+    const { dni } = req.query;
 
-    if (!email || !dni) {
-      res.status(400).json({ error: "Email y DNI son requeridos" });
+    if (!dni) {
+      res.status(400).json({ error: "DNI es requerido" });
       return;
     }
 
     const appointment = await appointmentService.getPendingAppointment(
-      email as string,
       dni as string
     );
 
@@ -183,14 +178,14 @@ export async function getPending(req: Request, res: Response, next: NextFunction
 export async function resendCode(req: Request, res: Response, next: NextFunction) {
   try {
     const id = req.params.id as string;
-    const { email, dni } = req.body;
+    const { dni } = req.body;
 
-    if (!email || !dni) {
-      res.status(400).json({ error: "Email y DNI son requeridos" });
+    if (!dni) {
+      res.status(400).json({ error: "DNI es requerido" });
       return;
     }
 
-    await appointmentService.resendVerificationCode(id, email, dni);
+    await appointmentService.resendVerificationCode(id, dni);
     res.json({ message: "Código reenviado correctamente" });
   } catch (err) {
     next(err);
@@ -198,13 +193,11 @@ export async function resendCode(req: Request, res: Response, next: NextFunction
 }
 
 const actionCodeSchema = z.object({
-  email: z.string().email("Formato de correo inválido"),
   dni: z.string().min(7, "El DNI debe tener al menos 7 caracteres"),
   code: z.string().length(6, "El código debe tener 6 dígitos"),
 });
 
 const rescheduleSchema = z.object({
-  email: z.string().email("Formato de correo inválido"),
   dni: z.string().min(7, "El DNI debe tener al menos 7 caracteres"),
   code: z.string().length(6, "El código debe tener 6 dígitos"),
   timeSlotId: z.string().min(1, "El ID del nuevo horario es requerido"),
@@ -213,8 +206,8 @@ const rescheduleSchema = z.object({
 export async function requestActionCode(req: Request, res: Response, next: NextFunction) {
   try {
     const id = req.params.id as string;
-    const { email, dni } = cancelAppointmentSchema.parse(req.body);
-    const result = await appointmentService.requestActionCode(id, email, dni);
+    const { dni } = cancelAppointmentSchema.parse(req.body);
+    const result = await appointmentService.requestActionCode(id, dni);
     res.json(result);
   } catch (err) {
     next(err);
@@ -224,8 +217,8 @@ export async function requestActionCode(req: Request, res: Response, next: NextF
 export async function cancelWithCode(req: Request, res: Response, next: NextFunction) {
   try {
     const id = req.params.id as string;
-    const { email, dni, code } = actionCodeSchema.parse(req.body);
-    const appointment = await appointmentService.cancelWithCode(id, email, dni, code);
+    const { dni, code } = actionCodeSchema.parse(req.body);
+    const appointment = await appointmentService.cancelWithCode(id, dni, code);
     res.clearCookie("verification_token");
     res.json(appointment);
   } catch (err) {
@@ -236,8 +229,8 @@ export async function cancelWithCode(req: Request, res: Response, next: NextFunc
 export async function reschedule(req: Request, res: Response, next: NextFunction) {
   try {
     const id = req.params.id as string;
-    const { email, dni, code, timeSlotId } = rescheduleSchema.parse(req.body);
-    const appointment = await appointmentService.rescheduleAppointment(id, email, dni, code, timeSlotId);
+    const { dni, code, timeSlotId } = rescheduleSchema.parse(req.body);
+    const appointment = await appointmentService.rescheduleAppointment(id, dni, code, timeSlotId);
     res.json(appointment);
   } catch (err) {
     next(err);

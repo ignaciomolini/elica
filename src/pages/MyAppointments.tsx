@@ -6,14 +6,12 @@ type Step = 'form' | 'list' | 'cancel-code' | 'reschedule-code' | 'reschedule-sl
 
 interface ActionState {
   appointmentId: string;
-  email: string;
   dni: string;
   step: Step;
   doctorId?: string;
 }
 
 export function MyAppointments() {
-  const [email, setEmail] = useState('');
   const [dni, setDni] = useState('');
   const [appointments, setAppointments] = useState<Appointment[] | null>(null);
   const [loading, setLoading] = useState(false);
@@ -39,7 +37,7 @@ export function MyAppointments() {
     setError(null);
 
     try {
-      const data = await appointmentsApi.getByPatient(email, dni);
+      const data = await appointmentsApi.getByPatient(dni);
       setAppointments(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al buscar turnos');
@@ -56,11 +54,10 @@ export function MyAppointments() {
     setCodeSent(false);
 
     try {
-      await appointmentsApi.requestActionCode(appointment.id, email, dni);
+      await appointmentsApi.requestActionCode(appointment.id, dni);
       setCodeSent(true);
       setAction({
         appointmentId: appointment.id,
-        email,
         dni,
         step: nextStep,
         doctorId: appointment.doctorId,
@@ -107,9 +104,9 @@ export function MyAppointments() {
     setError(null);
 
     try {
-      await appointmentsApi.cancelWithCode(action.appointmentId, email, dni, code);
+      await appointmentsApi.cancelWithCode(action.appointmentId, dni, code);
       // Refresh appointments
-      const data = await appointmentsApi.getByPatient(email, dni);
+      const data = await appointmentsApi.getByPatient(dni);
       setAppointments(data);
       setAction(null);
       setCode('');
@@ -126,8 +123,8 @@ export function MyAppointments() {
     setError(null);
 
     try {
-      await appointmentsApi.reschedule(action.appointmentId, email, dni, code, selectedSlot);
-      const data = await appointmentsApi.getByPatient(email, dni);
+      await appointmentsApi.reschedule(action.appointmentId, dni, code, selectedSlot);
+      const data = await appointmentsApi.getByPatient(dni);
       setAppointments(data);
       setAction(null);
       setCode('');
@@ -152,22 +149,10 @@ export function MyAppointments() {
       <div className="max-w-lg mx-auto px-4 py-12">
         <h1 className="text-3xl font-bold text-gray-900 mb-6 text-center">Mis turnos</h1>
         <p className="text-gray-600 mb-8 text-center">
-          Ingrese su correo y DNI para consultar sus turnos
+          Ingrese su DNI para consultar sus turnos
         </p>
 
         <form onSubmit={handleSearch} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Correo electrónico</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              placeholder="correo@ejemplo.com"
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-colors"
-            />
-          </div>
-
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">DNI</label>
             <input
@@ -241,7 +226,7 @@ export function MyAppointments() {
       </div>
 
       <p className="text-sm text-gray-500 mb-6">
-        Turnos de <strong>{email}</strong>
+        Turnos del DNI <strong>{dni}</strong>
       </p>
 
       {error && (
