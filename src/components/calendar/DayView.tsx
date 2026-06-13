@@ -107,15 +107,11 @@ export function DayView() {
                   }
 
                   // Arrow key navigation (up/down only in day view)
-                  let dRow = 0;
-                  switch (e.key) {
-                    case 'ArrowDown': dRow = 1; break;
-                    case 'ArrowUp': dRow = -1; break;
-                    default: return;
-                  }
+                  const rowDelta = e.key === 'ArrowDown' ? 1 : e.key === 'ArrowUp' ? -1 : null;
+                  if (rowDelta === null) return;
                   e.preventDefault();
 
-                  let nextRow = hourIdx + dRow;
+                  let nextRow = hourIdx + rowDelta;
                   const grid = gridRef.current;
                   if (!grid) return;
 
