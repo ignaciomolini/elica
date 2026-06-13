@@ -10,6 +10,7 @@ import { useCalendarStore } from '../../store/calendarStore';
 import { WeekView } from './WeekView';
 import { DayView } from './DayView';
 import { MonthView } from './MonthView';
+import { AppointmentPopup } from './AppointmentPopup';
 import type { ViewMode } from '../../store/calendarStore';
 
 const VIEW_LABELS: Record<ViewMode, string> = {
@@ -127,6 +128,9 @@ export function CalendarView() {
         {viewMode === 'week' && <WeekView />}
         {viewMode === 'month' && <MonthView />}
       </div>
+
+      {/* Appointment popup (create/edit) */}
+      <AppointmentPopup />
     </div>
   );
 }
