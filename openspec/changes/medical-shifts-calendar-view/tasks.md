@@ -56,6 +56,11 @@ Chain strategy: pending
 - [x] 3.2 Create `src/components/calendar/MonthView.tsx`: month grid with day cells expanding vertically to list all appointments for that day (no overflow cap), per product decision
 - [x] 3.3 Wire DayView and MonthView into CalendarView view-mode routing
 
+## Phase 3 Post-Verify Fixes (PR 3 — Bug Fix)
+
+- [x] BUG: `DayView.tsx` L124: `nextRow += dRow` → `nextRow += rowDelta` (undefined variable regression from commit ee473f8)
+- [x] ENHANCEMENT: `MonthView.tsx`: add keyboard navigation (Arrow Up/Down = weeks, Left/Right = days, Enter opens first appointment, tabIndex on in-month cells, focus ring, role="grid", aria-label)
+
 ## Phase 4: Appointment Popup (PR 4)
 
 - [ ] 4.1 Run `npx shadcn@latest add dialog` to install shadcn Dialog component
