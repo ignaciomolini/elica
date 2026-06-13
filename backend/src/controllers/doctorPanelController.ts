@@ -26,6 +26,19 @@ const updateProfileSchema = z.object({
 
 const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
+/**
+ * Validates that a date string is a semantically valid ISO 8601 date (YYYY-MM-DD).
+ * `Date.parse()` silently corrects overflow dates (e.g. "2026-02-31" → Mar 3),
+ * so we round-trip through Date and compare the result to reject such inputs.
+ */
+function isValidISODate(str: string): boolean {
+  if (!ISO_DATE_REGEX.test(str)) return false;
+  const parsed = Date.parse(str);
+  if (isNaN(parsed)) return false;
+  // Round-trip check: "2026-02-31" parses as Mar 3, which !== "2026-02-31"
+  return new Date(parsed).toISOString().slice(0, 10) === str;
+}
+
 export async function getAppointments(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const doctorId = req.doctor!.doctorId;
@@ -33,14 +46,14 @@ export async function getAppointments(req: AuthRequest, res: Response, next: Nex
     const { startDate, endDate } = req.query as { startDate?: string; endDate?: string };
 
     if (startDate) {
-      if (!ISO_DATE_REGEX.test(startDate) || isNaN(Date.parse(startDate))) {
+      if (!isValidISODate(startDate)) {
         res.status(400).json({ error: "El formato de fecha debe ser YYYY-MM-DD" });
         return;
       }
     }
 
     if (endDate) {
-      if (!ISO_DATE_REGEX.test(endDate) || isNaN(Date.parse(endDate))) {
+      if (!isValidISODate(endDate)) {
         res.status(400).json({ error: "El formato de fecha debe ser YYYY-MM-DD" });
         return;
       }
