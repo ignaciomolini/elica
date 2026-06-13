@@ -3,8 +3,6 @@ import {
   format,
   startOfWeek,
   endOfWeek,
-  startOfMonth,
-  endOfMonth,
   isToday,
 } from 'date-fns';
 import { es } from 'date-fns/locale';

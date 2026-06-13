@@ -6,9 +6,6 @@ import {
   endOfMonth,
   eachDayOfInterval,
   getDay,
-  startOfDay,
-  endOfDay,
-  parse,
 } from 'date-fns';
 import type { DoctorSchedule } from '../../types';
 
@@ -31,16 +28,7 @@ export function getMonthGrid(date: Date): Date[][] {
 
   // Align start to the preceding Monday
   const gridStart = startOfWeek(monthStart, { weekStartsOn: 1 });
-  // Align end to the following Sunday
-  const gridEnd = endOfDay(
-    addDays(
-      startOfWeek(monthEnd, { weekStartsOn: 1 }),
-      6 - getDay(monthEnd) + (getDay(monthEnd) === 0 ? 0 : 7),
-    ),
-  );
-
-  // Adjust gridEnd: if monthEnd is Sunday, gridEnd = monthEnd
-  // Otherwise extend to next Sunday
+  // Align end: if monthEnd is Sunday, gridEnd = monthEnd; otherwise extend to next Sunday
   const actualGridEnd = getDay(monthEnd) === 0
     ? monthEnd
     : addDays(startOfWeek(monthEnd, { weekStartsOn: 1 }), 6);
