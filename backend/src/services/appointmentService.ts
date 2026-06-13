@@ -283,11 +283,23 @@ async function cleanupExpired(): Promise<void> {
   ]);
 }
 
-export async function getDoctorAppointments(doctorId: string) {
+interface DateRange {
+  startDate?: string;
+  endDate?: string;
+}
+
+export async function getDoctorAppointments(doctorId: string, dateRange?: DateRange) {
   await cleanupExpired();
 
+  const dateFilter: Record<string, Date> = {};
+  if (dateRange?.startDate) dateFilter.gte = new Date(dateRange.startDate);
+  if (dateRange?.endDate) dateFilter.lte = new Date(dateRange.endDate);
+
   return prisma.appointment.findMany({
-    where: { doctorId },
+    where: {
+      doctorId,
+      ...(Object.keys(dateFilter).length > 0 ? { date: dateFilter } : {}),
+    },
     include: {
       patient: { select: { id: true, name: true, email: true, phone: true, dni: true } },
     },
