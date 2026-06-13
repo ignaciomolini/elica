@@ -63,9 +63,27 @@
 | `src/components/calendar/CalendarView.tsx` | Created | View toggle (day/week/month), date nav, range label, Spanish locale |
 | `src/pages/doctor/Appointments.tsx` | Modified | Replaced HTML table with CalendarView component |
 
+## Completed Tasks (PR3)
+
+- [x] 3.1 Create `src/components/calendar/DayView.tsx`: single-day hourly rows, respects DoctorSchedule hours
+- [x] 3.2 Create `src/components/calendar/MonthView.tsx`: month grid with day cells expanding vertically to list all appointments for that day (no overflow cap), per product decision
+- [x] 3.3 Wire DayView and MonthView into CalendarView view-mode routing
+
+### PR3 Commits
+
+e95cbc6 (feat: add day view), 7976abb (feat: add month view), 97c06b4 (feat: wire views into CalendarView)
+
+## Files Changed (PR3)
+
+| File | Action | What Was Done |
+|------|--------|---------------|
+| `src/components/calendar/DayView.tsx` | Created | Single-day hourly grid with DoctorSchedule hour range, appointment cells, empty state, arrow key nav |
+| `src/components/calendar/MonthView.tsx` | Created | Month grid with expanding day cells showing all appointments per day, status colors, click-to-edit |
+| `src/components/calendar/CalendarView.tsx` | Modified | Replaced placeholder stubs with DayView and MonthView imports and routing |
+
 ## Deviations from Design
 
-None — implementation matches design. Day and month views are placeholder stubs per PR scope (PR3).
+- **MonthView overflow**: The design spec says "+N more" overflow after 3 appointments. The task spec overrides this with "no overflow cap, expand to show all" per product decision. Implementation follows the task spec (task 3.2): all appointments are listed in each day cell with no truncation.
 
 ## Issues Found
 
@@ -73,5 +91,4 @@ None.
 
 ## Remaining Tasks
 
-- Phase 3 (PR3): Day + month views (3 tasks)
 - Phase 4 (PR4): Appointment popup (3 tasks)

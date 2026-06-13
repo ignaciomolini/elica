@@ -52,9 +52,9 @@ Chain strategy: pending
 
 ## Phase 3: Additional Views (PR 3)
 
-- [ ] 3.1 Create `src/components/calendar/DayView.tsx`: single-day hourly rows, respects DoctorSchedule hours
-- [ ] 3.2 Create `src/components/calendar/MonthView.tsx`: month grid with day cells expanding vertically to list all appointments for that day (no overflow cap), per product decision
-- [ ] 3.3 Wire DayView and MonthView into CalendarView view-mode routing
+- [x] 3.1 Create `src/components/calendar/DayView.tsx`: single-day hourly rows, respects DoctorSchedule hours
+- [x] 3.2 Create `src/components/calendar/MonthView.tsx`: month grid with day cells expanding vertically to list all appointments for that day (no overflow cap), per product decision
+- [x] 3.3 Wire DayView and MonthView into CalendarView view-mode routing
 
 ## Phase 4: Appointment Popup (PR 4)
 
