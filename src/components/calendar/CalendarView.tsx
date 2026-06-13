@@ -8,6 +8,8 @@ import {
 import { es } from 'date-fns/locale';
 import { useCalendarStore } from '../../store/calendarStore';
 import { WeekView } from './WeekView';
+import { DayView } from './DayView';
+import { MonthView } from './MonthView';
 import type { ViewMode } from '../../store/calendarStore';
 
 const VIEW_LABELS: Record<ViewMode, string> = {
@@ -121,17 +123,9 @@ export function CalendarView() {
 
       {/* Calendar content */}
       <div className="flex-1 overflow-auto bg-white rounded-xl shadow-sm border border-gray-100">
+        {viewMode === 'day' && <DayView />}
         {viewMode === 'week' && <WeekView />}
-        {viewMode === 'day' && (
-          <div className="flex items-center justify-center h-64 text-gray-500">
-            Vista día — disponible próximamente
-          </div>
-        )}
-        {viewMode === 'month' && (
-          <div className="flex items-center justify-center h-64 text-gray-500">
-            Vista mes — disponible próximamente
-          </div>
-        )}
+        {viewMode === 'month' && <MonthView />}
       </div>
     </div>
   );

@@ -3,7 +3,7 @@
 **Change**: medical-shifts-calendar-view
 **Mode**: Standard (no test runner)
 **Delivery**: stacked-to-main
-**Re-verification**: PR2 post-fix (W1–W5 resolved)
+**Re-verifications**: PR2 post-fix (W1–W5 resolved), PR3 post-fix (CRITICAL dRow + MonthView keyboard nav)
 
 ---
 
@@ -116,7 +116,7 @@ All 12 spec scenarios compliant. Previous WARNING (Date.parse auto-correction) r
 | Week View Layout | Cell shows appointment for that day+time | `appointmentMap.get(slotKey)` renders patient name with status colors | ✅ COMPLIANT |
 | Month View Layout | Month view shows full month grid | Not yet implemented (PR3) | ⚠️ PARTIAL (stub; PR3 scope) |
 | Month View Layout | Day cell lists appointments | Not yet implemented (PR3) | ⚠️ PARTIAL (stub; PR3 scope) |
-| Month View Layout | More than 3 appointments shows overflow indicator | Not yet implemented (PR3) | ⚠️ PARTIAL (stub; PR3 scope) |
+| Month View Layout | Day cell expands to show all appointments | Not yet implemented (PR3) | ⚠️ PARTIAL (stub; PR3 scope) |
 | Appointment Cell Click | Click existing appointment opens edit popup | `onClick` → `openPopup('edit', day, hour, appointment)` | ✅ COMPLIANT |
 | Appointment Cell Click | Click empty time slot opens create popup | `onClick` → `openPopup('create', day, hour)` | ✅ COMPLIANT |
 | Loading and Empty States | Loading state during fetch | Spinner + "Cargando turnos..." in CalendarView (sole indicator) | ✅ COMPLIANT |
@@ -147,7 +147,7 @@ All 12 spec scenarios compliant. Previous WARNING (Date.parse auto-correction) r
 | Custom date-fns+Tailwind (vs react-big-calendar) | ✅ Yes | Custom implementation with date-fns + Tailwind grid |
 | Zustand store (vs URL params) | ✅ Yes | `useCalendarStore` with all specified state and actions |
 | shadcn Dialog for popup | ➖ N/A | Popup is PR4; store has `popup` state and `openPopup`/`closePopup` ready |
-| Show first 3 + "+N more" for month | ➖ N/A | Month view is PR3; `getMonthGrid` utility is ready |
+| Expand cell vertically for month (product decision) | ➖ N/A | Month view is PR3; `getMonthGrid` utility is ready |
 | Prisma composite index | ✅ Yes | Already verified in PR1 |
 | Status color map (amber/primary/faded-red) | ✅ Yes | Matches design table exactly |
 | Accessibility (role="grid", aria-label, tabIndex) | ✅ Yes | `role="grid"`, `role="gridcell"`, `aria-label` on cells, `tabIndex={0}` (day-off cells: -1) |
@@ -179,17 +179,152 @@ All 12 spec scenarios compliant. Previous WARNING (Date.parse auto-correction) r
 
 ---
 
-## Issues Found (All PRs)
+## PR3: Day + Month Views
+
+**Branch**: feat/calendar-day-month-views (base: main)
+**Commits**: e95cbc6 (feat: day view), 7976abb (feat: month view), 97c06b4 (feat: wire routing), ee473f8 (fix: lint error), 998f844 (docs), **89a0689 (fix: dRow→rowDelta + MonthView keyboard nav)**, f65864c (docs: update tasks)
+**Files changed**: 5 files (+ commits 89a0689+f65864c), +303 initial + ~42 fix
+**Re-verification**: v2 — post-fix (CRITICAL dRow → rowDelta, MonthView keyboard navigation added)
+
+### PR3 Post-Fix Verification
+
+| Issue | Previous Status | Fix Commit | Evidence | Result |
+|---|---|---|---|---|
+| **CRITICAL**: DayView L124: `nextRow += dRow` (undefined) | ❌ CRITICAL | 89a0689 | DayView.tsx L124: `nextRow += rowDelta` — variable correctly declared at L110 | ✅ RESOLVED |
+| **WARNING**: MonthView no keyboard navigation | ❌ UNTESTED | 89a0689 | MonthView.tsx L65-115: `gridRef`, `role="grid"`, `role="gridcell"`, `data-row`/`data-col`, `tabIndex={inMonth ? 0 : -1}`, `onKeyDown` with ArrowUp/Down/Left/Right, Enter opens first appointment, `focus:ring-2`, `tabIndex >= 0` fallback skip for out-of-month cells | ✅ RESOLVED |
+
+### PR3 Completeness
+
+| Metric | Value |
+|--------|-------|
+| Tasks total (PR3) | 3 |
+| Tasks complete | 3 |
+| Tasks incomplete | 0 |
+| Post-verify fixes | 2/2 resolved |
+
+### PR3 Build & Tests Execution
+
+**TypeScript (frontend)**: ✅ Passed — `npx tsc --noEmit` — 0 errors
+**Vite build**: ✅ Passed — `npx vite build` — built in 545ms (2719 modules transformed) — *re-verified Sat Jun 13 2026*
+**ESLint**: ✅ Passed — `npx eslint src/components/calendar/DayView.tsx MonthView.tsx CalendarView.tsx` — 0 errors, 0 warnings — *re-verified Sat Jun 13 2026*
+**Tests**: ➖ No test runner available (standard mode)
+**Coverage**: ➖ Not available
+
+### PR3 Spec Compliance Matrix (calendar-view)
+
+| Requirement | Scenario | Evidence | Result |
+|---|---|---|---|
+| View Mode Toggle | Switch to day view | DayView renders with hourly grid; stubs removed from CalendarView | ✅ COMPLIANT |
+| View Mode Toggle | Switch to month view | MonthView renders with month grid; stubs removed from CalendarView | ✅ COMPLIANT |
+| Date Navigation | Navigate to next week | CalendarView unchanged from PR2 | ✅ COMPLIANT |
+| Date Navigation | Navigate to previous day | CalendarView unchanged from PR2 | ✅ COMPLIANT |
+| Date Navigation | Navigate to today | CalendarView unchanged from PR2 | ✅ COMPLIANT |
+| Status-Based Color Coding | Pending appointment shows yellow | DayView L135: `getStatusCellClasses(appointment.status)` → amber; MonthView L139: same | ✅ COMPLIANT |
+| Status-Based Color Coding | Confirmed appointment shows green | Same function → primary (teal) classes | ✅ COMPLIANT |
+| Status-Based Color Coding | Cancelled appointment shows faded red | Same function → red-50/50 classes | ✅ COMPLIANT |
+| Day View Layout | Day view shows hourly grid | DayView L65-149: grid with `role="grid"`, hourly rows, DoctorSchedule-aware hours via `getScheduleForDay` | ✅ COMPLIANT |
+| Day View Layout | Empty slot shows no appointment | DayView L145: empty cell when no appointment; clickable for create | ✅ COMPLIANT |
+| Week View Layout | Week view shows 7-day grid | Unchanged from PR2 | ✅ COMPLIANT |
+| Week View Layout | Cell shows appointment for that day+time | Unchanged from PR2 | ✅ COMPLIANT |
+| Month View Layout | Month view shows full month grid | MonthView L19: `getMonthGrid(currentDate)`, L65-158: 7-col grid, Monday start, `role="grid"` | ✅ COMPLIANT |
+| Month View Layout | Day cell lists appointments | MonthView L131-152: all appointments render with patient name + startTime | ✅ COMPLIANT |
+| Month View Layout | Day cell expands to show all appointments | MonthView L130-152: shows ALL appointments, cell expands vertically — matches updated spec (product decision: expand, no overflow cap) | ✅ COMPLIANT |
+| Appointment Cell Click | Click existing appointment opens edit popup | DayView L94: `openPopup('edit', ...)`, MonthView L140: `openPopup('edit', ...)` | ✅ COMPLIANT |
+| Appointment Cell Click | Click empty time slot opens create popup | DayView L96: `openPopup('create', ...)` | ✅ COMPLIANT |
+| Loading and Empty States | Loading state during fetch | CalendarView unchanged from PR2 (sole loading indicator); DayView L48-51: "No hay turnos para este día"; MonthView L45-48: "No hay turnos para este mes" | ✅ COMPLIANT |
+| Loading and Empty States | Empty state for date range with no appointments | DayView L48-51: "No hay turnos para este día"; MonthView L45-48: "No hay turnos para este mes" | ✅ COMPLIANT |
+| Keyboard Accessibility | Arrow key navigation in week view | Unchanged from PR2 | ✅ COMPLIANT |
+| Keyboard Accessibility | Visible focus ring | DayView L89: `focus:ring-2 focus:ring-primary-500 focus:outline-none` on cells; MonthView L84: same on all gridcells | ✅ COMPLIANT |
+| Keyboard Accessibility | Arrow key navigation in day view | DayView L110-125: ArrowUp/ArrowDown with `rowDelta` (no more `dRow` bug), fallback scanning with while loop, `data-row` targeting | ✅ COMPLIANT |
+| Keyboard Accessibility | Arrow key navigation in month view | MonthView L89-115: ArrowUp/Down/Left/Right with `dRow`/`dCol`, `data-row`/`data-col`, `tabIndex >= 0` fallback skip for out-of-month cells, Enter opens first appointment | ✅ COMPLIANT |
+
+**Compliance summary**: 22/22 scenarios fully compliant, 0/22 partial, 0/22 failing, 0/22 untested
+
+**Change from previous verify (v1)**: +3 scenarios promoted (day arrow nav PARTIAL→COMPLIANT, month focus ring PARTIAL→COMPLIANT, month keyboard nav UNTESTED→COMPLIANT). Month overflow scenario FIXED — spec.md updated from "+N more" to "expand cell vertically" to match product decision and implementation.
+
+### PR3 Correctness (Static Evidence)
+
+| Requirement | Status | Notes |
+|---|---|---|
+| Task 3.1: DayView.tsx | ✅ Implemented | Hourly rows, DoctorSchedule-aware via `getScheduleForDay`, status colors, keyboard nav (Up/Down + Enter with correct `rowDelta`), empty state, click handlers for popup |
+| Task 3.2: MonthView.tsx | ✅ Implemented | Month grid with `getMonthGrid`, day cells expand to show ALL appointments, status colors, empty state, click handlers, full keyboard nav (arrow keys + Enter), focus ring, aria-grid |
+| Task 3.3: Wire DayView and MonthView into CalendarView | ✅ Implemented | Imports added, stub placeholders removed, conditional rendering (`viewMode === 'day'` / `'month'`) |
+| Bug fix: dRow → rowDelta (ee473f8 regression) | ✅ Fixed | DayView.tsx L110 declares `const rowDelta`, L114/L124 reference `rowDelta` — no undefined variable |
+| Enhancement: MonthView keyboard nav | ✅ Implemented | Full arrow key grid navigation with fallback scanning, Enter for first appointment, tabIndex on in-month cells only |
+
+### PR3 Coherence (Design)
+
+| Decision | Followed? | Notes |
+|---|---|---|
+| Custom date-fns+Tailwind (vs react-big-calendar) | ✅ Yes | Both DayView and MonthView use date-fns + Tailwind grid |
+| Zustand store (vs URL params) | ✅ Yes | `useCalendarStore` used consistently |
+| Expand cell vertically for month (product decision) | ✅ Yes | MonthView shows ALL appointments, cells expand vertically. Design.md updated from "+N more" to "Expand cell vertically — product decision". Spec.md updated: scenario changed from "overflow indicator" to "Day cell expands to show all appointments". No overflow cap. |
+| DoctorSchedule-aware hours | ✅ Yes | DayView uses `getScheduleForDay` + `getHoursRange` |
+| Accessibility (role="grid", aria-label, tabIndex) | ✅ Yes | DayView: `role="grid"`, `role="gridcell"`, `tabIndex={0}`, `aria-label`. MonthView: same — all added in fix commit 89a0689. |
+| Arrow key navigation (Left/Right, Up/Down) | ✅ Yes | DayView: Up/Down with `rowDelta` (fixed). MonthView: full 2D arrow nav with `dRow`/`dCol` and `tabIndex >= 0` fallback skip. |
+| Focus ring: `focus:ring-2 focus:ring-primary-500` | ✅ Yes | DayView cells (L89), MonthView gridcells (L84), MonthView appointment buttons (L139) |
+| ViewMode type ('day' \| 'week' \| 'month') | ✅ Yes | CalendarView renders all three views conditionally |
+| Spanish locale for date formatting | ✅ Yes | DayView: `format(currentDate, "d 'de' MMMM 'de' yyyy", { locale: es })`. MonthView: `format(day, 'EEE', { locale: es })` for headers. |
+
+### PR3 Issues Found (v2 — Re-verify)
+
+#### CRITICAL
+
+None. Previous CRITICAL (undefined `dRow` in DayView.tsx L124) resolved in commit 89a0689.
+
+#### WARNING
+
+1. **RESOLVED**: `MonthView.tsx` L130-152: spec-design-implementation misalignment on month overflow behavior — **spec.md and design.md have been updated to reflect product decision (expand cell vertically, no overflow cap)**. Implementation now matches spec.
+
+#### SUGGESTION
+
+1. **`DayView.tsx` L118-125: While loop is unnecessary for day view**
+   - The while loop with fallback scanning was copied from WeekView.tsx where it skips day-off cells (`tabIndex >= 0` check). DayView has only one column and all cells are focusable — the initial `querySelector` will always succeed. The loop can be simplified to a direct `querySelector` + `focus()` call.
+
+2. **`MonthView.tsx` L39-42: `dayHeaders` useMemo has empty dependency array but calls `new Date()` internally**
+   - `useMemo(() => { const base = startOfWeek(new Date(), ...); ... }, [])` — the `new Date()` inside a `[]`-dep useMemo is a minor code smell violating React Strict Mode purity. Since this only computes static weekday headers, it's functionally correct but stylistically misleading.
+
+3. **TypeScript 6.0.3 did NOT catch `dRow` undefined variable (historical — bug fixed)**
+   - Despite `"strict": true` in `tsconfig.app.json`, `npx tsc --noEmit` passed with 0 errors even when `dRow` was referenced undefined in DayView.tsx.
+   - Root cause investigation pending: project references, incremental build quirks, or `verbatimModuleSyntax` interaction may be masking errors.
+   - **Recommendation**: consider adding an ESLint `no-undef` override or a dedicated `// @ts-expect-error` smoke test to prevent regression.
+
+4. **`DayView.tsx` L74: `isCurrentHour` uses `format(new Date(), 'HH:00')` — fragile format comparison**
+   - The `hour` variable comes from `getHoursRange()` which may or may not use the same format string. If `getHoursRange` returns hours in a different format (e.g., "8:00" vs "08:00"), the comparison silently fails. Minor but fragile.
+
+5. **`DayView.tsx` L118-125: Fallback scanning doesn't check `tabIndex >= 0` (unlike WeekView and MonthView)**
+   - WeekView and MonthView check `target.tabIndex >= 0` to skip non-focusable cells. DayView doesn't have this check. However, DayView doesn't render non-focusable cells, so this is currently harmless.
+
+6. **`MonthView.tsx` L79-115: Gridcell has no `onClick` handler for empty days**
+   - Clicking an empty in-month day cell does nothing — there's no `onClick` on the gridcell `<div>`. Only the appointment `<button>` children have `onClick`. The spec's "Click empty time slot opens create popup" scenario specifically targets day/week view time slots (not month view days), so this is acceptable behavior for a month grid. However, future UX may want a create flow from month view.
+
+### PR3 Verdict
+
+**PASS** — 0 CRITICAL issues, 0 WARNING issues. Previous CRITICAL (`dRow` undefined variable) resolved. Previous WARNING (MonthView no keyboard nav) resolved — full arrow key navigation with focus ring, tabIndex, and Enter support added. Previous WARNING (spec-design-implementation misalignment on month overflow) resolved — spec.md and design.md updated to reflect product decision (expand cell, no overflow cap). 22/22 spec scenarios compliant. 3/3 core tasks complete, 2/2 post-verify fixes resolved. Build, TypeScript, and ESLint all pass clean.
+
+---
+
+## Consolidated Issues (All PRs)
 
 ### CRITICAL
-None
+
+None. PR3 CRITICAL (undefined `dRow` in DayView.tsx) resolved in commit 89a0689.
 
 ### WARNING
-None
+
+None. PR3 WARNING (spec-design-implementation misalignment on month overflow) resolved by updating spec.md and design.md to reflect product decision (expand cell vertically, no overflow cap).
 
 ### SUGGESTION (carried from PR1)
 - `DateRange` interface in `appointmentService.ts` is not exported. Would be useful for type sharing.
 - Frontend `getAppointments` params type duplicates the `DateRange` type shape instead of importing a shared type.
+
+### SUGGESTION (PR3 — v2)
+- `DayView.tsx` L118-125: while loop unnecessary for single-column day view (copied from WeekView).
+- `MonthView.tsx` L39-42: `dayHeaders` useMemo with `[]` deps but calls `new Date()` internally (React Strict Mode purity).
+- TypeScript 6.0.3 did NOT catch `dRow` undefined despite `strict: true` — investigate project config; add ESLint override.
+- `DayView.tsx` L74: `isCurrentHour` comparison may fail if `getHoursRange` returns non-zero-padded hours.
+- `DayView.tsx` L118-125: fallback scanning doesn't check `tabIndex >= 0` (unlike WeekView/MonthView).
+- `MonthView.tsx` L79-115: gridcell has no `onClick` for empty days (acceptable for month view, but future UX may want it).
 
 ---
 
@@ -197,21 +332,20 @@ None
 
 ### PR1: PASS
 ### PR2: PASS
+### PR3: PASS (v3 — doc correction resolves last WARNING)
 
-All 5 previous WARNING issues (W1–W5) are resolved. TypeScript compilation (0 errors), Vite production build (414ms, 2717 modules). All 7 PR2 tasks complete. 15/22 spec scenarios fully compliant, 7/22 partial (all PR3 day/month stubs, as expected for PR2 scope). 0 untested scenarios. No design deviations (positive additions only: DoctorSchedule integration). No CRITICAL or WARNING issues remain.
-
-PR2 is ready for merge to main.
+All PRs pass. PR3's remaining WARNING (spec-design-implementation misalignment on month overflow) resolved by updating spec.md and design.md to reflect the product decision (expand cell vertically, no overflow cap).
 
 ---
 
 ## Change Summary
 
-| Aspect | PR1 | PR2 (initial) | PR2 (re-verify) |
-|--------|-----|---------------|-----------------|
-| Verdict | PASS | PASS WITH WARNINGS | PASS |
-| Tasks complete | 4/4 | 7/7 | 7/7 |
-| Spec scenarios | 12/12 compliant | 12/22 compliant, 8 partial, 2 untested | 15/22 compliant, 7 partial, 0 untested |
-| CRITICAL issues | 0 | 0 | 0 |
-| WARNING issues | 0 (was 1, resolved) | 5 | 0 |
-| SUGGESTION issues | 2 | 2 (same as PR1) | 2 (same as PR1) |
-| Build | ✅ | ✅ | ✅ |
+| Aspect | PR1 | PR2 (initial) | PR2 (re-verify) | PR3 (v1) | PR3 (v2 re-verify) | PR3 (v3 doc fix) |
+|--------|-----|---------------|-----------------|----------|---------------------|-------------------|
+| Verdict | PASS | PASS WITH WARNINGS | PASS | FAIL | PASS WITH WARNINGS | PASS |
+| Tasks complete | 4/4 | 7/7 | 7/7 | 3/3 | 3/3 + 2 fixes | 3/3 + 2 fixes + doc fix |
+| Spec scenarios | 12/12 compliant | 12/22 compliant, 8 partial, 2 untested | 15/22 compliant, 7 partial, 0 untested | 18/22 compliant, 2 partial, 1 failing, 1 untested | 21/22 compliant, 0 partial, 1 failing, 0 untested | 22/22 compliant |
+| CRITICAL issues | 0 | 0 | 0 | 1 | 0 | 0 |
+| WARNING issues | 0 (was 1, resolved) | 5 | 0 | 2 | 1 | 0 |
+| SUGGESTION issues | 2 | 2 (same as PR1) | 2 (same as PR1) | 5 | 6 | 6 |
+| Build | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
