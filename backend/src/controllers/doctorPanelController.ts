@@ -24,10 +24,34 @@ const updateProfileSchema = z.object({
   avatar: z.string().optional(),
 });
 
+const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+
 export async function getAppointments(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const doctorId = req.doctor!.doctorId;
-    const appointments = await appointmentService.getDoctorAppointments(doctorId);
+
+    const { startDate, endDate } = req.query as { startDate?: string; endDate?: string };
+
+    if (startDate) {
+      if (!ISO_DATE_REGEX.test(startDate) || isNaN(Date.parse(startDate))) {
+        res.status(400).json({ error: "El formato de fecha debe ser YYYY-MM-DD" });
+        return;
+      }
+    }
+
+    if (endDate) {
+      if (!ISO_DATE_REGEX.test(endDate) || isNaN(Date.parse(endDate))) {
+        res.status(400).json({ error: "El formato de fecha debe ser YYYY-MM-DD" });
+        return;
+      }
+    }
+
+    if (startDate && endDate && startDate > endDate) {
+      res.status(400).json({ error: "La fecha final debe ser posterior a la fecha inicial" });
+      return;
+    }
+
+    const appointments = await appointmentService.getDoctorAppointments(doctorId, { startDate, endDate });
     res.json(appointments);
   } catch (err) {
     next(err);

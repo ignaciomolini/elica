@@ -219,7 +219,13 @@ async function apiUpload<T>(endpoint: string, formData: FormData): Promise<T> {
 
 // Doctor API (authentication via HttpOnly cookie)
 export const doctorPanelApi = {
-  getAppointments: () => apiRequest<Appointment[]>('/doctor/appointments'),
+  getAppointments: (params?: { startDate?: string; endDate?: string }) => {
+    const query = new URLSearchParams();
+    if (params?.startDate) query.set('startDate', params.startDate);
+    if (params?.endDate) query.set('endDate', params.endDate);
+    const qs = query.toString();
+    return apiRequest<Appointment[]>(`/doctor/appointments${qs ? `?${qs}` : ''}`);
+  },
 
   getStats: () => apiRequest<DoctorDashboardStats>('/doctor/stats'),
 
