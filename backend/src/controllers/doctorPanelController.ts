@@ -18,6 +18,21 @@ const updateStatusSchema = z.object({
   }),
 });
 
+const createConfirmedAppointmentSchema = z.object({
+  timeSlotId: z.string().min(1, "El horario es requerido"),
+  patientName: z.string().min(2, "El nombre del paciente debe tener al menos 2 caracteres"),
+  patientEmail: z.string().email("El email no es válido"),
+  patientPhone: z.string().min(1, "El teléfono es requerido"),
+  patientDni: z.string().min(1, "El DNI es requerido"),
+});
+
+const updateAppointmentPatientSchema = z.object({
+  patientName: z.string().min(2, "El nombre del paciente debe tener al menos 2 caracteres").optional(),
+  patientEmail: z.string().email("El email no es válido").optional(),
+  patientPhone: z.string().min(1, "El teléfono es requerido").optional(),
+  patientDni: z.string().min(1, "El DNI es requerido").optional(),
+});
+
 const updateProfileSchema = z.object({
   name: z.string().min(2, "El nombre debe tener al menos 2 caracteres").optional(),
   bio: z.string().optional(),
@@ -88,6 +103,48 @@ export async function deleteSlot(req: AuthRequest, res: Response, next: NextFunc
     const slotId = req.params.slotId as string;
     await doctorService.deleteTimeSlot(slotId, doctorId);
     res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function createConfirmedAppointment(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const doctorId = req.doctor!.doctorId;
+    const { timeSlotId, patientName, patientEmail, patientPhone, patientDni } = createConfirmedAppointmentSchema.parse(req.body);
+
+    const appointment = await appointmentService.createConfirmedAppointment({
+      doctorId,
+      timeSlotId,
+      patientName,
+      patientEmail,
+      patientPhone,
+      patientDni,
+    });
+
+    res.status(201).json(appointment);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function updateAppointmentPatient(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const doctorId = req.doctor!.doctorId;
+    const appointmentId = req.params.id as string;
+    const data = updateAppointmentPatientSchema.parse(req.body);
+
+    // Verify the appointment belongs to this doctor
+    const appointments = await appointmentService.getDoctorAppointments(doctorId);
+    const appointment = appointments.find(a => a.id === appointmentId);
+
+    if (!appointment) {
+      res.status(404).json({ error: "Turno no encontrado o no pertenece a este médico" });
+      return;
+    }
+
+    const updated = await appointmentService.updateAppointmentPatient(appointmentId, data);
+    res.json(updated);
   } catch (err) {
     next(err);
   }

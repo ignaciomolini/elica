@@ -352,6 +352,43 @@ export async function updateAppointmentStatus(
   return updated;
 }
 
+export async function updateAppointmentPatient(
+  appointmentId: string,
+  data: { patientName?: string; patientEmail?: string; patientPhone?: string; patientDni?: string }
+) {
+  const appointment = await prisma.appointment.findUnique({
+    where: { id: appointmentId },
+    include: { patient: true },
+  });
+
+  if (!appointment) {
+    throw new Error("Turno no encontrado");
+  }
+
+  // Update the patient record
+  const patientUpdate: Record<string, string> = {};
+  if (data.patientName) patientUpdate.name = data.patientName;
+  if (data.patientEmail) patientUpdate.email = data.patientEmail;
+  if (data.patientPhone) patientUpdate.phone = data.patientPhone;
+  if (data.patientDni) patientUpdate.dni = data.patientDni;
+
+  if (Object.keys(patientUpdate).length > 0) {
+    await prisma.patient.update({
+      where: { id: appointment.patientId },
+      data: patientUpdate,
+    });
+  }
+
+  // Return updated appointment with patient info
+  return prisma.appointment.findUnique({
+    where: { id: appointmentId },
+    include: {
+      doctor: { select: { id: true, name: true } },
+      patient: { select: { id: true, name: true, email: true, phone: true, dni: true } },
+    },
+  });
+}
+
 export async function deleteAppointment(appointmentId: string) {
   const appointment = await prisma.appointment.findUnique({
     where: { id: appointmentId },

@@ -67,6 +67,12 @@ router.get("/verify-slots", async (req: any, res) => {
   res.json({ schedule, slotsCount: slots.length, slots });
 });
 
+// Doctor creates a confirmed appointment (skip SMS verification)
+router.post("/appointments", doctorPanelController.createConfirmedAppointment);
+
+// Doctor updates appointment patient details
+router.put("/appointments/:id/patient", doctorPanelController.updateAppointmentPatient);
+
 // Doctor updates appointment status
 router.put("/appointments/:id/status", doctorPanelController.updateAppointmentStatus);
 
