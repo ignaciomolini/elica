@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useRef, Fragment } from 'react';
 import { format, getDay, isToday } from 'date-fns';
 import { es } from 'date-fns/locale';
 import type { Appointment } from '../../types';
@@ -8,6 +8,7 @@ import { getStatusCellClasses } from './statusColors';
 
 export function WeekView() {
   const { appointments, currentDate, schedules, openPopup, loading } = useCalendarStore();
+  const gridRef = useRef<HTMLDivElement>(null);
 
   const weekDays = useMemo(() => getWeekDays(currentDate), [currentDate]);
 
@@ -32,13 +33,8 @@ export function WeekView() {
     );
   }, [weekDays, schedules]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-gray-500">Cargando turnos...</p>
-      </div>
-    );
-  }
+  /** True when the week has no appointments after loading completes */
+  const isEmptyWeek = !loading && appointments.length === 0;
 
   if (hours.length === 0) {
     return (
@@ -50,7 +46,12 @@ export function WeekView() {
 
   return (
     <div className="overflow-x-auto">
-      <div className="grid grid-cols-[60px_repeat(7,1fr)] min-w-[800px]" role="grid" aria-label="Calendario semanal">
+      {isEmptyWeek && (
+        <div className="px-4 py-3 mb-2 bg-primary-50 border border-primary-200 text-primary-700 rounded-lg text-sm text-center">
+          No hay turnos para esta semana
+        </div>
+      )}
+      <div ref={gridRef} className="grid grid-cols-[60px_repeat(7,1fr)] min-w-[800px]" role="grid" aria-label="Calendario semanal">
         {/* Header row */}
         <div className="p-2" /> {/* corner cell */}
         {weekDays.map((day) => {
@@ -80,26 +81,27 @@ export function WeekView() {
         })}
 
         {/* Hour rows */}
-        {hours.map((hour) => (
-          <>
+        {hours.map((hour, hourIdx) => (
+          <Fragment key={hour}>
             {/* Time label */}
             <div
-              key={`time-${hour}`}
               className="p-2 text-xs text-gray-500 text-right pr-3 border-r border-gray-100"
             >
               {hour}
             </div>
 
             {/* Day cells */}
-            {weekDays.map((day) => {
+            {weekDays.map((day, dayIdx) => {
               const daySchedule = getScheduleForDay(schedules, getDay(day));
               const isDayOff = !daySchedule;
               const slotKey = formatSlotKey(day, hour);
               const appointment = appointmentMap.get(slotKey);
               const isCurrentHour = isToday(day) && hour === format(new Date(), 'HH:00');
 
-              let cellClasses = 'border border-gray-100 p-1 min-h-[44px] cursor-pointer transition-colors hover:bg-gray-50';
-
+              let cellClasses = 'border border-gray-100 p-1 min-h-[44px] transition-colors focus:ring-2 focus:ring-primary-500 focus:outline-none';
+              if (!isDayOff) {
+                cellClasses += ' cursor-pointer hover:bg-gray-50';
+              }
               if (isDayOff) {
                 cellClasses = 'border border-gray-100 bg-gray-50/50 min-h-[44px]';
               } else if (isCurrentHour) {
@@ -111,6 +113,8 @@ export function WeekView() {
                   key={slotKey}
                   role="gridcell"
                   tabIndex={isDayOff ? -1 : 0}
+                  data-row={hourIdx}
+                  data-col={dayIdx}
                   className={cellClasses}
                   onClick={() => {
                     if (!isDayOff) {
@@ -122,12 +126,42 @@ export function WeekView() {
                     }
                   }}
                   onKeyDown={(e) => {
+                    // Enter key: activate cell (edit/create)
                     if (e.key === 'Enter' && !isDayOff) {
                       if (appointment) {
                         openPopup('edit', day, hour, appointment);
                       } else {
                         openPopup('create', day, hour);
                       }
+                      return;
+                    }
+
+                    // Arrow key navigation
+                    let dRow = 0;
+                    let dCol = 0;
+                    switch (e.key) {
+                      case 'ArrowRight': dCol = 1; break;
+                      case 'ArrowLeft': dCol = -1; break;
+                      case 'ArrowDown': dRow = 1; break;
+                      case 'ArrowUp': dRow = -1; break;
+                      default: return;
+                    }
+                    e.preventDefault();
+
+                    let nextRow = hourIdx + dRow;
+                    let nextCol = dayIdx + dCol;
+                    const grid = gridRef.current;
+                    if (!grid) return;
+
+                    // Scan for next focusable cell, skipping day-off cells
+                    while (nextRow >= 0 && nextRow < hours.length && nextCol >= 0 && nextCol < 7) {
+                      const target = grid.querySelector(`[data-row="${nextRow}"][data-col="${nextCol}"]`);
+                      if (target instanceof HTMLElement && target.tabIndex >= 0) {
+                        target.focus();
+                        return;
+                      }
+                      nextRow += dRow;
+                      nextCol += dCol;
                     }
                   }}
                   aria-label={
@@ -146,7 +180,7 @@ export function WeekView() {
                 </div>
               );
             })}
-          </>
+          </Fragment>
         ))}
       </div>
     </div>
