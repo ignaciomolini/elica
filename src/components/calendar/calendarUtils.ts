@@ -42,10 +42,19 @@ export function getMonthGrid(date: Date): Date[][] {
 }
 
 /**
- * Returns an array of hour strings representing the time range
- * from the given start time to end time (inclusive of start, exclusive of end).
+ * Normalizes a time string to 'HH:mm'.
+ * Handles both 'HH:mm' and 'HH:mm:ss' formats.
+ */
+export function normalizeTime(time: string): string {
+  return time.slice(0, 5);
+}
+
+/**
+ * Returns an array of time slot strings representing the time range
+ * from the given start time to end time (inclusive of start, exclusive of end),
+ * respecting each schedule's interval (in minutes).
  *
- * Falls back to '08:00'–'20:00' if no schedules are provided.
+ * Falls back to '08:00'–'20:00' with a 60-minute interval if no schedules are provided.
  *
  * @param schedules - DoctorSchedule entries for the relevant period
  * @returns Array of 'HH:mm' strings
@@ -60,50 +69,53 @@ export function getHoursRange(schedules: DoctorSchedule[]): string[] {
     return defaultHoursRange();
   }
 
-  // Find the earliest start and latest end across enabled schedules
-  let minHour = 24;
-  let minMin = 0;
-  let maxHour = 0;
-  let maxMin = 0;
+  // Find the earliest start, latest end, and smallest interval across enabled schedules
+  let minMinutes = Infinity;
+  let maxMinutes = 0;
+  let intervalMinutes = Infinity;
 
   for (const schedule of enabledSchedules) {
     const [sH, sM] = schedule.startTime.split(':').map(Number);
     const [eH, eM] = schedule.endTime.split(':').map(Number);
-    if (sH < minHour || (sH === minHour && sM < minMin)) {
-      minHour = sH;
-      minMin = sM;
-    }
-    if (eH > maxHour || (eH === maxHour && eM > maxMin)) {
-      maxHour = eH;
-      maxMin = eM;
+    const start = sH * 60 + sM;
+    const end = eH * 60 + eM;
+
+    if (start < minMinutes) minMinutes = start;
+    if (end > maxMinutes) maxMinutes = end;
+    if (schedule.interval > 0 && schedule.interval < intervalMinutes) {
+      intervalMinutes = schedule.interval;
     }
   }
 
-  const hours: string[] = [];
-  let currentHour = minHour;
-  while (currentHour < maxHour) {
-    hours.push(`${String(currentHour).padStart(2, '0')}:00`);
-    currentHour++;
+  const interval = intervalMinutes === Infinity ? 60 : intervalMinutes;
+
+  const slots: string[] = [];
+  for (let minutes = minMinutes; minutes < maxMinutes; minutes += interval) {
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    slots.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
   }
-  return hours;
+  return slots;
 }
 
 function defaultHoursRange(): string[] {
-  const hours: string[] = [];
-  for (let h = 8; h < 20; h++) {
-    hours.push(`${String(h).padStart(2, '0')}:00`);
+  const slots: string[] = [];
+  for (let minutes = 8 * 60; minutes < 20 * 60; minutes += 60) {
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    slots.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
   }
-  return hours;
+  return slots;
 }
 
 /**
  * Creates a unique key for a day+time slot, used as a map key
  * or React key for appointment lookup.
  *
- * Format: 'YYYY-MM-DD_HH:MM'
+ * Format: 'YYYY-MM-DD_HH:mm'
  */
 export function formatSlotKey(date: Date, time: string): string {
-  return `${format(date, 'yyyy-MM-dd')}_${time}`;
+  return `${format(date, 'yyyy-MM-dd')}_${normalizeTime(time)}`;
 }
 
 /**

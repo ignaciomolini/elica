@@ -9,7 +9,7 @@ import {
 import { es } from 'date-fns/locale';
 import type { Appointment } from '../../types';
 import { useCalendarStore } from '../../store/calendarStore';
-import { getMonthGrid, formatSlotKey } from './calendarUtils';
+import { getMonthGrid, formatSlotKey, normalizeTime } from './calendarUtils';
 import { getStatusCellClasses } from './statusColors';
 
 export function MonthView() {
@@ -89,7 +89,7 @@ export function MonthView() {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && inMonth && dayAppointments.length > 0) {
                     const firstApt = dayAppointments[0];
-                    openPopup('edit', day, firstApt.startTime, firstApt);
+                    openPopup('edit', day, normalizeTime(firstApt.startTime), firstApt);
                     return;
                   }
 
@@ -137,14 +137,14 @@ export function MonthView() {
                           key={slotKey}
                           type="button"
                           className={`w-full text-left rounded px-1 py-0.5 text-[11px] border cursor-pointer transition-colors hover:opacity-80 focus:ring-2 focus:ring-primary-500 focus:outline-none ${getStatusCellClasses(apt.status)}`}
-                          onClick={() => openPopup('edit', day, apt.startTime, apt)}
+                          onClick={() => openPopup('edit', day, normalizeTime(apt.startTime), apt)}
                           aria-label={`${apt.patient?.name ?? 'Sin paciente'}, ${apt.startTime}–${apt.endTime}`}
                         >
                           <div className="truncate font-medium">
                             {apt.patient?.name ?? 'Sin paciente'}
                           </div>
                           <div className="truncate opacity-75">
-                            {apt.startTime}
+                            {normalizeTime(apt.startTime)}
                           </div>
                         </button>
                       );

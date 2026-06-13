@@ -71,7 +71,7 @@ export function DayView() {
         {hours.map((hour, hourIdx) => {
           const slotKey = formatSlotKey(currentDate, hour);
           const appointment = appointmentMap.get(slotKey);
-          const isCurrentHour = isToday(currentDate) && hour === format(new Date(), 'HH:00');
+          const isCurrentHour = isToday(currentDate) && hour === format(new Date(), 'HH:mm');
 
           return (
             <div key={hour} className="contents">

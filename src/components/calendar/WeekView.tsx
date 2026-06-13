@@ -96,7 +96,7 @@ export function WeekView() {
               const isDayOff = !daySchedule;
               const slotKey = formatSlotKey(day, hour);
               const appointment = appointmentMap.get(slotKey);
-              const isCurrentHour = isToday(day) && hour === format(new Date(), 'HH:00');
+              const isCurrentHour = isToday(day) && hour === format(new Date(), 'HH:mm');
 
               let cellClasses = 'border border-gray-100 p-1 min-h-[44px] transition-colors focus:ring-2 focus:ring-primary-500 focus:outline-none';
               if (!isDayOff) {

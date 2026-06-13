@@ -4,6 +4,7 @@ import { es } from 'date-fns/locale';
 import { useCalendarStore } from '../../store/calendarStore';
 import { doctorPanelApi } from '../../services/api';
 import { getStatusColors } from './statusColors';
+import { normalizeTime } from './calendarUtils';
 import {
   Dialog,
   DialogContent,
@@ -105,7 +106,7 @@ export function AppointmentPopup() {
       const slots = await doctorPanelApi.getAllSlots(dateStr);
 
       const slot = slots.find(
-        (s) => s.available && s.startTime === time,
+        (s) => s.available && normalizeTime(s.startTime) === normalizeTime(time ?? ''),
       );
 
       if (!slot) {
@@ -212,7 +213,7 @@ export function AppointmentPopup() {
 
   return (
     <>
-      <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) closePopup(); }}>
+      <Dialog open={popup.open} onOpenChange={(isOpen) => { if (!isOpen) closePopup(); }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>
@@ -300,10 +301,10 @@ export function AppointmentPopup() {
           <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-between">
             {isCreate ? (
               <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end w-full">
-                <Button variant="outline" onClick={closePopup} disabled={saving}>
+                <Button type="button" variant="outline" onClick={closePopup} disabled={saving}>
                   Cancelar
                 </Button>
-                <Button variant="primary" onClick={handleCreate} disabled={saving}>
+                <Button type="button" variant="primary" onClick={handleCreate} disabled={saving}>
                   {saving ? 'Creando...' : 'Crear turno'}
                 </Button>
               </div>
@@ -312,7 +313,7 @@ export function AppointmentPopup() {
                 {/* Status action buttons */}
                 <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
                   {appointment?.status === 'PENDING' && (
-                    <Button
+                    <Button type="button"
                       variant="primary"
                       onClick={handleConfirm}
                       disabled={saving}
@@ -322,7 +323,7 @@ export function AppointmentPopup() {
                     </Button>
                   )}
                   {(appointment?.status === 'PENDING' || appointment?.status === 'CONFIRMED') && (
-                    <Button
+                    <Button type="button"
                       variant="outline"
                       onClick={() => setConfirmAction('cancel')}
                       disabled={saving}
@@ -335,7 +336,7 @@ export function AppointmentPopup() {
                 {/* Save / Delete buttons */}
                 <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
                   {!isCancelled && (
-                    <Button
+                    <Button type="button"
                       variant="primary"
                       onClick={handleSave}
                       disabled={saving}
@@ -344,7 +345,7 @@ export function AppointmentPopup() {
                       {saving ? 'Guardando...' : 'Guardar cambios'}
                     </Button>
                   )}
-                  <Button
+                  <Button type="button"
                     variant="outline"
                     className="!text-red-600 hover:!bg-red-50"
                     onClick={() => setConfirmAction('delete')}
