@@ -70,9 +70,17 @@ Chain strategy: pending
 
 ## Phase 4: Appointment Popup (PR 4)
 
-- [ ] 4.1 Run `npx shadcn@latest add dialog` to install shadcn Dialog component
-- [ ] 4.2 Create `src/components/calendar/AppointmentPopup.tsx`: shadcn Dialog with create/edit mode, patient form fields, confirm/cancel/delete actions, error display
-- [ ] 4.3 Wire cell click → openPopup (create on empty slot, edit on existing) and post-action calendar refresh in calendarStore
+- [x] 4.1 Run `npx shadcn@latest add dialog` to install shadcn Dialog component
+- [x] 4.2 Create `src/components/calendar/AppointmentPopup.tsx`: shadcn Dialog with create/edit mode, patient form fields, confirm/cancel/delete actions, error display
+- [x] 4.3 Wire cell click → openPopup (create on empty slot, edit on existing) and post-action calendar refresh in calendarStore
+
+## Phase 4 Post-Verify Fixes (PR 4 — Warning Corrections)
+
+- [x] W4.1: Remove 3 unused imports from AppointmentPopup.tsx (`Appointment` type, `DialogClose`, `Cancel01Icon`)
+- [x] W4.2: Fix react-hooks/set-state-in-effect — replace `useEffect` form reset with key-based reset via conditional rendering in CalendarView
+- [x] W4.3: Fix network error message to match spec — "Error de conexion. Intente nuevamente." for TypeError (network failures)
+- [ ] TECH-DEBT: `updateAppointmentPatient` runs outside Prisma transaction (appointmentService.ts L355-390)
+- [ ] TECH-DEBT: Controller authorization fetches all doctor appointments O(n) for ownership check (doctorPanelController.ts L138-139)
 
 ## Phase 5: Verification (QA)
 

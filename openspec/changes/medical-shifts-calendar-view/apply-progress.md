@@ -89,6 +89,53 @@ e95cbc6 (feat: add day view), 7976abb (feat: add month view), 97c06b4 (feat: wir
 
 None.
 
+## Completed Tasks (PR4)
+
+- [x] 4.1 Run `npx shadcn@latest add dialog` to install shadcn Dialog component
+- [x] 4.2 Create `src/components/calendar/AppointmentPopup.tsx`: shadcn Dialog with create/edit mode, patient form fields, confirm/cancel/delete actions, error display
+- [x] 4.3 Wire cell click → openPopup (create on empty slot, edit on existing) and post-action calendar refresh in calendarStore
+
+### PR4 Commits
+
+ca58c43 (feat: add shadcn dialog, alert-dialog, input, and label components)
+430534a (feat: add doctor appointment creation and patient update endpoints)
+3e19024 (feat: add frontend API methods for doctor appointment mutations)
+ab4785d (feat: add AppointmentPopup with create/edit/cancel/delete actions)
+
+## PR4 Post-Verify Fixes (Warning Corrections)
+
+- [x] W4.1: Remove 3 unused imports from AppointmentPopup.tsx (`Appointment` type, `DialogClose`, `Cancel01Icon`)
+- [x] W4.2: Fix react-hooks/set-state-in-effect — replace `useEffect` form reset with key-based reset pattern (conditional rendering + key prop in CalendarView)
+- [x] W4.3: Fix network error message to match spec — `getErrorMessage()` helper returns "Error de conexion. Intente nuevamente." for TypeError (network failure), server messages for API errors
+
+## Files Changed (PR4)
+
+| File | Action | What Was Done |
+|------|--------|---------------|
+| `src/components/ui/dialog.tsx` | Created | shadcn Dialog component (base-ui) |
+| `src/components/ui/shadcn-button.tsx` | Created | shadcn Button component (renamed to avoid conflict with custom Button.tsx) |
+| `src/components/ui/alert-dialog.tsx` | Created | shadcn AlertDialog component for confirm/cancel/delete actions |
+| `src/components/ui/input.tsx` | Created | shadcn Input component for form fields |
+| `src/components/ui/label.tsx` | Created | shadcn Label component for form fields |
+| `backend/src/controllers/doctorPanelController.ts` | Modified | Added createConfirmedAppointment and updateAppointmentPatient controllers |
+| `backend/src/services/appointmentService.ts` | Modified | Added updateAppointmentPatient service method |
+| `backend/src/routes/doctor.ts` | Modified | Added POST /doctor/appointments and PUT /doctor/appointments/:id/patient routes |
+| `src/services/api.ts` | Modified | Added createConfirmedAppointment and updateAppointmentPatient API methods |
+| `src/components/calendar/AppointmentPopup.tsx` | Created | Full popup component with create/edit modes, form fields, actions, error handling |
+| `src/components/calendar/CalendarView.tsx` | Modified | Added AppointmentPopup import and render |
+
+### PR4 Post-Verify Fix Files
+
+| File | Action | What Was Done |
+|------|--------|---------------|
+| `src/components/calendar/AppointmentPopup.tsx` | Modified | Removed unused imports (Appointment type, DialogClose, Cancel01Icon), removed useEffect in favor of key-based reset, added getErrorMessage helper for spec-compliant network error messages |
+| `src/components/calendar/CalendarView.tsx` | Modified | Added popup state to store destructuring, changed AppointmentPopup to conditional rendering with key prop for remount-on-context-change |
+
+### Tech Debt Documented (Not Fixed)
+
+- **TD-1**: `updateAppointmentPatient` outside Prisma transaction (appointmentService.ts L355-390) — low risk race condition
+- **TD-2**: Controller authorization O(n) fetch of all doctor appointments (doctorPanelController.ts L138-139) — correct but inefficient at scale
+
 ## Remaining Tasks
 
-- Phase 4 (PR4): Appointment popup (3 tasks)
+- Phase 5 (QA): Manual QA — not part of this PR
