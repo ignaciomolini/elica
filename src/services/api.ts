@@ -257,6 +257,27 @@ export const doctorPanelApi = {
       method: 'DELETE',
     }),
 
+  createConfirmedAppointment: (data: {
+    timeSlotId: string;
+    patientName: string;
+    patientEmail: string;
+    patientPhone: string;
+    patientDni: string;
+  }) =>
+    apiRequest<Appointment>('/doctor/appointments', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  updateAppointmentPatient: (
+    appointmentId: string,
+    data: { patientName?: string; patientEmail?: string; patientPhone?: string; patientDni?: string },
+  ) =>
+    apiRequest<Appointment>(`/doctor/appointments/${appointmentId}/patient`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+
   uploadAvatar: (file: File) => {
     const formData = new FormData();
     formData.append('avatar', file);
