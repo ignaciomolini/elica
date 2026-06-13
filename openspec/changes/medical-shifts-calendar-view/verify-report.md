@@ -3,7 +3,7 @@
 **Change**: medical-shifts-calendar-view
 **Mode**: Standard (no test runner)
 **Delivery**: stacked-to-main
-**Re-verifications**: PR2 post-fix (W1–W5 resolved), PR3 post-fix (CRITICAL dRow + MonthView keyboard nav)
+**Re-verifications**: PR2 post-fix (W1–W5 resolved), PR3 post-fix (CRITICAL dRow + MonthView keyboard nav), **PR4 post-fix (3 warnings resolved: ESLint, setState-in-effect, network error message)**
 
 ---
 
@@ -323,9 +323,21 @@ None. Previous CRITICAL (undefined `dRow` in DayView.tsx L124) resolved in commi
 **TypeScript (frontend)**: ✅ Passed — `npx tsc --noEmit` — 0 errors
 **TypeScript (backend)**: ✅ Passed — `npx tsc --noEmit` — 0 errors
 **Vite build**: ✅ Passed — `npx vite build` — built in 630ms (2893 modules transformed)
-**ESLint**: ⚠️ 4 errors in AppointmentPopup.tsx — 3 unused imports, 1 setState-in-effect pattern
+**ESLint (PR4 files)**: ✅ Passed — 0 errors, 0 warnings — *re-verified Sat Jun 13 2026*
+**ESLint (project-wide)**: 23 pre-existing errors in other files — none in PR4 scope
 **Tests**: ➖ No test runner available (standard mode)
 **Coverage**: ➖ Not available
+
+### PR4 Re-Verification (v2 — Post-Warning Fixes)
+
+**Fix branch**: `fix/pr4-appointment-popup-warnings` (commits: `b0b7e1f` fix, `a465d2b` docs)
+**Files changed**: `AppointmentPopup.tsx` (+37/-37), `CalendarView.tsx` (+8/-2)
+
+| Warning | Previous Status | Fix Commit | Evidence | Result |
+|---|---|---|---|---|
+| W4.1: 3 unused imports (Appointment type, DialogClose, Cancel01Icon) | ESLint error | b0b7e1f | L1-29: `useEffect`, `Appointment`, `DialogClose`, `Cancel01Icon` all removed from imports. ESLint 0 errors. | ✅ RESOLVED |
+| W4.2: setState-in-effect in AppointmentPopup.tsx useEffect | ESLint error | b0b7e1f | L57-71: `useState`-only import, form initialized from store data on mount. CalendarView L133-137: conditional rendering with `key` prop forces remount. No `useEffect`, no `setState` in effects. | ✅ RESOLVED |
+| W4.3: Network error message doesn't match spec wording | ⚠️ PARTIAL | b0b7e1f | L50-55: `getErrorMessage()` helper returns `"Error de conexion. Intente nuevamente."` for `TypeError` (network failure). All 5 catch blocks updated (L128, L154, L169, L185, L201). | ✅ RESOLVED |
 
 ### PR4 Spec Compliance Matrix (appointment-popup)
 
@@ -345,10 +357,12 @@ None. Previous CRITICAL (undefined `dRow` in DayView.tsx L124) resolved in commi
 | Popup Close Behavior | Close via Escape key | shadcn Dialog native Escape handling (focus trap + keydown) | ✅ COMPLIANT |
 | Popup Close Behavior | Close via backdrop click | shadcn Dialog native backdrop click handling (DialogOverlay + onOpenChange) | ✅ COMPLIANT |
 | Error Handling | API error on create | L126-129: try/catch displays error in red banner; form remains editable; popup stays open | ✅ COMPLIANT |
-| Error Handling | Network error on save | L153-156: try/catch shows error; message is generic "Error al guardar los cambios" — NOT the spec-required "Error de conexion. Intente nuevamente." | ⚠️ PARTIAL |
+| Error Handling | Network error on save | L50-55: `getErrorMessage()` helper returns `"Error de conexion. Intente nuevamente."` for `TypeError` (network failure from fetch). All 5 catch blocks use this helper. | ✅ COMPLIANT |
 | Single Appointment Per Slot | Slot taken by concurrent booking | L106-113: `slots.find(s => s.available && s.startTime === time)`; if not found → "El horario ya no está disponible" | ✅ COMPLIANT |
 
-**Compliance summary**: 15/16 scenarios fully compliant, 1/16 partial (network error message), 0/16 untested, 0/16 failing
+**Compliance summary**: 16/16 scenarios fully compliant, 0/16 partial, 0/16 untested, 0/16 failing
+
+**Change from previous verify (v1)**: +1 scenario promoted (Network error on save ⚠️ PARTIAL → ✅ COMPLIANT). All 3 ESLint/spec warnings resolved. 16/16 fully compliant.
 
 ### PR4 Correctness (Static Evidence)
 
@@ -459,9 +473,9 @@ None. All PRs pass without critical issues.
 ### PR1: PASS
 ### PR2: PASS
 ### PR3: PASS (v3 — doc correction resolves last WARNING)
-### PR4: PASS (3/5 warnings fixed, 2 documented as tech debt)
+### PR4: PASS (v2 — all 3 warnings resolved, 16/16 spec scenarios compliant)
 
-PR4 passes. 3/5 warnings fixed (ESLint unused imports, setState-in-effect → key-based reset, network error message now matches spec). 2 backend warnings documented as tech debt (`updateAppointmentPatient` outside transaction, O(n) authorization fetch). All 3 core tasks complete. 16/16 spec scenarios fully compliant (network error message now matches spec exactly). TypeScript passes clean on both frontend and backend. Vite build passes. ESLint passes clean. `createConfirmedAppointment` correctly skips SMS verification. Confirmation dialogs protect destructive actions. Calendar refreshes after all mutations.
+PR4 passes. All 3 actionable warnings fixed (ESLint unused imports, setState-in-effect → key-based reset, network error message now matches spec). 2 backend warnings documented as tech debt (`updateAppointmentPatient` outside transaction, O(n) authorization fetch). All 3 core tasks complete. 16/16 spec scenarios fully compliant. TypeScript passes clean on both frontend and backend. Vite build passes. ESLint passes clean on PR4 files. `createConfirmedAppointment` correctly skips SMS verification. Confirmation dialogs protect destructive actions. Calendar refreshes after all mutations. **Re-verified Sat Jun 13 2026** — all fixes confirmed in place.
 
 ---
 
@@ -469,16 +483,16 @@ PR4 passes. 3/5 warnings fixed (ESLint unused imports, setState-in-effect → ke
 
 | Aspect | PR1 | PR2 | PR3 | PR4 |
 |--------|-----|-----|-----|-----|
-| Verdict | PASS | PASS | PASS | PASS |
+| Verdict | PASS | PASS | PASS | PASS (v2) |
 | Tasks complete | 4/4 | 7/7 + 5 fixes | 3/3 + 2 fixes + doc fix | 3/3 + 3 warning fixes |
 | Spec scenarios | 12/12 compliant | 15/22 compliant → 22/22 (post-PR3) | 22/22 compliant | 16/16 compliant |
 | CRITICAL issues | 0 | 0 | 0 | 0 |
 | WARNING issues | 0 (was 1, resolved) | 0 (was 5, resolved) | 0 (was 2, resolved) | 0 (3 fixed, 2 → tech debt) |
 | SUGGESTION issues | 2 | 2 | 6 | 3 |
 | Build (tsc + vite) | ✅ | ✅ | ✅ | ✅ |
-| ESLint | ➖ | ➖ | ✅ 0 errors | ✅ 0 errors |
+| ESLint | ➖ | ➖ | ✅ 0 errors | ✅ 0 errors (PR4 files) |
 
-**Overall verdict**: PASS — all 4 PRs complete, all CRITICAL issues resolved, all WARNING issues either fixed or documented as tech debt. 16/16 spec scenarios compliant. ESLint clean. Tech debt items tracked for future optimization.
+**Overall verdict**: PASS — all 4 PRs complete, all CRITICAL issues resolved, all WARNING issues either fixed or documented as tech debt. 16/16 spec scenarios compliant. ESLint clean on all PR4 files. Tech debt items tracked for future optimization. **PR4 re-verified Sat Jun 13 2026** — 3/3 warnings resolved, build and lint clean.
 
 ---
 
