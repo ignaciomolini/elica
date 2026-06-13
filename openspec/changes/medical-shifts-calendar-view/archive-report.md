@@ -71,6 +71,14 @@ All PRs passed TypeScript, Vite build, and ESLint checks (within scope).
 - `src/components/ui/label.tsx`
 - `src/components/ui/shadcn-button.tsx`
 
+## Post-Release Fixes
+
+| Bug | Branch | Merge Commit | Fix |
+|---|---|---|---|
+| Clicking a date opened popup and a blank browser tab | `fix/calendar-bugs` | `209b907` | `AppointmentPopup` used `Dialog open={open}` where `open` was undefined, falling back to `window.open`; changed to `popup.open` and added `type="button"` to all popup buttons. |
+| 12:30 appointment only visible in month view | `fix/calendar-bugs` | `209b907` | `getHoursRange` generated only whole-hour slots and `formatSlotKey` did not normalize `HH:mm:ss`. Added `normalizeTime`, interval-aware slot generation, and `HH:mm` current-hour checks. |
+| Side time labels ignored doctor's configured intervals | `fix/calendar-bugs` | `209b907` | `getHoursRange` now reads `DoctorSchedule.interval` and emits slots every N minutes instead of every 60 minutes. |
+
 ## Next Steps
 
 - Run manual QA phase 5 (outside SDD scope).
