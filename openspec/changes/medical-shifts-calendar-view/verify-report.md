@@ -3,7 +3,7 @@
 **Change**: medical-shifts-calendar-view
 **Mode**: Standard (no test runner)
 **Delivery**: stacked-to-main
-**Re-verifications**: PR2 post-fix (W1–W5 resolved), PR3 post-fix (CRITICAL dRow + MonthView keyboard nav)
+**Re-verifications**: PR2 post-fix (W1–W5 resolved), PR3 post-fix (CRITICAL dRow + MonthView keyboard nav), **PR4 post-fix (3 warnings resolved: ESLint, setState-in-effect, network error message)**
 
 ---
 
@@ -304,15 +304,150 @@ None. Previous CRITICAL (undefined `dRow` in DayView.tsx L124) resolved in commi
 
 ---
 
+## PR4: Appointment Popup
+
+**Branch**: feat/calendar-appointment-popup (merged to main)
+**Commits**: ca58c43 (feat: add shadcn components), 430534a (feat: backend endpoints), 3e19024 (feat: frontend API methods), ab4785d (feat: AppointmentPopup component)
+**Files changed**: 11 files, +956 insertions
+
+### PR4 Completeness
+
+| Metric | Value |
+|--------|-------|
+| Tasks total (PR4) | 3 |
+| Tasks complete | 3 |
+| Tasks incomplete | 0 |
+
+### PR4 Build & Tests
+
+**TypeScript (frontend)**: ✅ Passed — `npx tsc --noEmit` — 0 errors
+**TypeScript (backend)**: ✅ Passed — `npx tsc --noEmit` — 0 errors
+**Vite build**: ✅ Passed — `npx vite build` — built in 630ms (2893 modules transformed)
+**ESLint (PR4 files)**: ✅ Passed — 0 errors, 0 warnings — *re-verified Sat Jun 13 2026*
+**ESLint (project-wide)**: 23 pre-existing errors in other files — none in PR4 scope
+**Tests**: ➖ No test runner available (standard mode)
+**Coverage**: ➖ Not available
+
+### PR4 Re-Verification (v2 — Post-Warning Fixes)
+
+**Fix branch**: `fix/pr4-appointment-popup-warnings` (commits: `b0b7e1f` fix, `a465d2b` docs)
+**Files changed**: `AppointmentPopup.tsx` (+37/-37), `CalendarView.tsx` (+8/-2)
+
+| Warning | Previous Status | Fix Commit | Evidence | Result |
+|---|---|---|---|---|
+| W4.1: 3 unused imports (Appointment type, DialogClose, Cancel01Icon) | ESLint error | b0b7e1f | L1-29: `useEffect`, `Appointment`, `DialogClose`, `Cancel01Icon` all removed from imports. ESLint 0 errors. | ✅ RESOLVED |
+| W4.2: setState-in-effect in AppointmentPopup.tsx useEffect | ESLint error | b0b7e1f | L57-71: `useState`-only import, form initialized from store data on mount. CalendarView L133-137: conditional rendering with `key` prop forces remount. No `useEffect`, no `setState` in effects. | ✅ RESOLVED |
+| W4.3: Network error message doesn't match spec wording | ⚠️ PARTIAL | b0b7e1f | L50-55: `getErrorMessage()` helper returns `"Error de conexion. Intente nuevamente."` for `TypeError` (network failure). All 5 catch blocks updated (L128, L154, L169, L185, L201). | ✅ RESOLVED |
+
+### PR4 Spec Compliance Matrix (appointment-popup)
+
+| Requirement | Scenario | Evidence | Result |
+|---|---|---|---|
+| Popup Trigger Context | Empty slot click opens create mode | DayView/WeekView/MonthView → `openPopup('create', date, time)`; AppointmentPopup L218-230 shows create form with date/time pre-filled | ✅ COMPLIANT |
+| Popup Trigger Context | Existing appointment click opens edit mode | DayView/WeekView/MonthView → `openPopup('edit', date, time, appointment)`; AppointmentPopup L63-72 populates form from appointment data | ✅ COMPLIANT |
+| Create Appointment Flow | Create with valid data | handleCreate L80-131: slot check → `createConfirmedAppointment` with all patient fields; status=CONFIRMED, verified=true | ✅ COMPLIANT |
+| Create Appointment Flow | Create refreshes calendar | L124-125: `closePopup(); fetchAppointments()` after successful creation | ✅ COMPLIANT |
+| Create Appointment Flow | Create requires all fields | L81-96: validation for patientName, email, phone, dni — all required; error on empty | ✅ COMPLIANT |
+| Edit Appointment Flow | Edit patient details | handleSave L133-158: validates name, calls `updateAppointmentPatient` with all 4 fields | ✅ COMPLIANT |
+| Edit Appointment Flow | Confirm pending appointment | handleConfirm L160-174: `updateAppointmentStatus(id, 'CONFIRMED')`; only shown when `status === 'PENDING'` | ✅ COMPLIANT |
+| Edit Appointment Flow | Cancel appointment | handleCancelAppointment L176-191: AlertDialog confirmation → `updateAppointmentStatus(id, 'CANCELLED')`; shown for PENDING and CONFIRMED | ✅ COMPLIANT |
+| Delete Appointment | Delete with confirmation | handleDelete L193-208: AlertDialog → `deleteAppointment(id)`; shown for all non-CANCELLED appointments | ✅ COMPLIANT |
+| Delete Appointment | Delete cancellation | AlertDialogCancel L384 → `setConfirmAction(null)`; popup remains open | ✅ COMPLIANT |
+| Popup Close Behavior | Close via X button | DialogContent L61-75: built-in close button via `showCloseButton=true`; `onOpenChange` → `closePopup()` | ✅ COMPLIANT |
+| Popup Close Behavior | Close via Escape key | shadcn Dialog native Escape handling (focus trap + keydown) | ✅ COMPLIANT |
+| Popup Close Behavior | Close via backdrop click | shadcn Dialog native backdrop click handling (DialogOverlay + onOpenChange) | ✅ COMPLIANT |
+| Error Handling | API error on create | L126-129: try/catch displays error in red banner; form remains editable; popup stays open | ✅ COMPLIANT |
+| Error Handling | Network error on save | L50-55: `getErrorMessage()` helper returns `"Error de conexion. Intente nuevamente."` for `TypeError` (network failure from fetch). All 5 catch blocks use this helper. | ✅ COMPLIANT |
+| Single Appointment Per Slot | Slot taken by concurrent booking | L106-113: `slots.find(s => s.available && s.startTime === time)`; if not found → "El horario ya no está disponible" | ✅ COMPLIANT |
+
+**Compliance summary**: 16/16 scenarios fully compliant, 0/16 partial, 0/16 untested, 0/16 failing
+
+**Change from previous verify (v1)**: +1 scenario promoted (Network error on save ⚠️ PARTIAL → ✅ COMPLIANT). All 3 ESLint/spec warnings resolved. 16/16 fully compliant.
+
+### PR4 Correctness (Static Evidence)
+
+| Requirement | Status | Notes |
+|---|---|---|
+| Task 4.1: shadcn Dialog installed | ✅ Implemented | `dialog.tsx` (155 lines), `alert-dialog.tsx` (185 lines), `shadcn-button.tsx` (56 lines), `input.tsx` (20 lines), `label.tsx` (18 lines) — all based on @base-ui/react |
+| Task 4.2: AppointmentPopup.tsx | ✅ Implemented | 397-line component: create/edit modes, patient form (name/email/phone/dni), confirm/cancel/delete with AlertDialog confirmation, error display, loading states, disabled inputs during save |
+| Task 4.3: Cell click → popup + refresh | ✅ Implemented | CalendarView L131: `<AppointmentPopup />` rendered; DayView/WeekView/MonthView click handlers → `openPopup()`; all mutation handlers → `closePopup() + fetchAppointments()` |
+| Backend: createConfirmedAppointment endpoint | ✅ Implemented | `POST /doctor/appointments` → Zod validation → `createConfirmedAppointment` service: status=CONFIRMED, verified=true, no verification code/email — **correctly skips SMS verification** |
+| Backend: updateAppointmentPatient endpoint | ✅ Implemented | `PUT /doctor/appointments/:id/patient` → Zod validation → doctor ownership check → `updateAppointmentPatient` service |
+| Backend: deleteAppointment endpoint | ✅ Implemented | `DELETE /doctor/appointments/:id` → `doctorPanelController.deleteAppointment` — pre-existing, used by popup |
+| Frontend: createConfirmedAppointment API | ✅ Implemented | `apiRequest<Appointment>('/doctor/appointments', { method: 'POST', body })` |
+| Frontend: updateAppointmentPatient API | ✅ Implemented | `apiRequest<Appointment>('/doctor/appointments/${id}/patient', { method: 'PUT', body })` |
+
+### PR4 Coherence (Design)
+
+| Decision | Followed? | Notes |
+|---|---|---|
+| shadcn Dialog for popup | ✅ Yes | Uses custom shadcn Dialog (based on @base-ui/react), not react-shadcn — matches project convention |
+| Zustand store popup state | ✅ Yes | `popup: { open, mode, date?, time?, appointment? }` used via `useCalendarStore` |
+| Focus trap, Escape, backdrop | ✅ Yes | All provided by DialogPrimitive from @base-ui/react |
+| Accessibility (aria-modal, focus trap) | ✅ Yes | DialogPrimitive natively handles these |
+| Create uses `createConfirmedAppointment` (no SMS) | ✅ Yes | status=CONFIRMED, verified=true, no verification code generation, no email — **exactly matches the product decision** |
+| Spanish UI labels | ✅ Yes | "Nuevo turno", "Editar turno", "Crear turno", "Guardar cambios", "Confirmar", "Cancelar turno", "Eliminar", "¿Cancelar turno?", "¿Eliminar turno?" |
+| Confirmation dialogs for destructive actions | ✅ Yes | AlertDialog for cancel and delete with "Sí, cancelar" / "Sí, eliminar" confirmation buttons |
+| Calendar refresh after mutation | ✅ Yes | All handlers call `closePopup()` + `fetchAppointments()` |
+| Status badge in edit mode | ✅ Yes | getStatusColors(status).label displayed as badge: "Pendiente", "Confirmado", "Cancelado" |
+
+### PR4 Issues Found
+
+#### CRITICAL
+
+None.
+
+#### WARNING
+
+1. ~~**ESLint: 3 unused imports in AppointmentPopup.tsx**~~ **FIXED** (commit: fix branch)
+   - Removed: `Appointment` type (L4), `DialogClose` (L15), `Cancel01Icon` (L31)
+   - ESLint now passes with 0 errors on AppointmentPopup.tsx
+
+2. ~~**ESLint: react-hooks/set-state-in-effect in AppointmentPopup.tsx L59-61**~~ **FIXED** (commit: fix branch)
+   - Replaced `useEffect` form reset with key-based reset pattern
+   - CalendarView now conditionally renders `<AppointmentPopup key={...} />` — key changes force remount, eliminating all `setState` calls in effects
+   - `useEffect` import removed from AppointmentPopup.tsx
+
+3. ~~**Network error message doesn't match spec**~~ **FIXED** (commit: fix branch)
+   - Added `getErrorMessage()` helper that checks for `TypeError` (network failure from fetch) → returns spec-required `"Error de conexion. Intente nuevamente."`
+   - All 5 catch blocks updated to use `getErrorMessage()` with appropriate fallbacks
+   - Spec scenario now compliant: "Error de conexion. Intente nuevamente." is shown on network errors
+
+4. **`updateAppointmentPatient` runs outside transaction** → **TECH DEBT** (not fixed)
+   - Service method (`appointmentService.ts`) does `findUnique` → `patient.update` → `findUnique` without a Prisma transaction wrapper
+   - Low-risk but theoretically vulnerable to a race condition if the appointment is deleted between the patient update and the final read
+   - Documented in tech debt; not fixed in this PR to limit scope
+
+5. **Controller authorization uses `getDoctorAppointments(doctorId)` fetching ALL appointments** → **TECH DEBT** (not fixed)
+   - `updateAppointmentPatient` controller L138-139: fetches all doctor appointments, then does `appointments.find(a => a.id === appointmentId)` for ownership check
+   - Works correctly but `O(n)` where n = total doctor appointments. For the current scale this is fine; could be optimized with a direct Prisma query filtered by `doctorId + appointmentId`
+   - Documented in tech debt; not fixed in this PR to limit scope
+
+#### SUGGESTION
+
+1. **Two Button implementations coexist**: custom `../ui/Button.tsx` (used by AppointmentPopup) and `../ui/shadcn-button.tsx` (used by dialog/alert-dialog). Consolidating on one would simplify the component library.
+
+2. **String-based slot matching in handleCreate (L103-108)**: `slots.find(s => s.available && s.startTime === time)` uses string equality on `startTime` — fragile if backend changes time format (e.g., "8:00" vs "08:00").
+
+3. **`updateAppointmentPatientSchema` has `min(1).optional()` on phone/dni**: valid Zod, but `min(1)` on optional fields is unusual — if a field is omitted, Zod skips it; if provided, `min(1)` is trivially satisfied.
+
+---
+
 ## Consolidated Issues (All PRs)
 
 ### CRITICAL
 
-None. PR3 CRITICAL (undefined `dRow` in DayView.tsx) resolved in commit 89a0689.
+None. All PRs pass without critical issues.
 
 ### WARNING
 
-None. PR3 WARNING (spec-design-implementation misalignment on month overflow) resolved by updating spec.md and design.md to reflect product decision (expand cell vertically, no overflow cap).
+| PR | Issue | Status |
+|----|-------|--------|
+| PR4 | ESLint: 3 unused imports in AppointmentPopup.tsx | ✅ Fixed |
+| PR4 | ESLint: setState-in-effect in AppointmentPopup.tsx useEffect | ✅ Fixed (key-based reset) |
+| PR4 | Network error message doesn't match spec wording | ✅ Fixed (getErrorMessage helper) |
+| PR4 | `updateAppointmentPatient` service outside transaction | 🔧 Tech debt |
+| PR4 | Controller authorization fetches all doctor appointments (O(n)) | 🔧 Tech debt |
 
 ### SUGGESTION (carried from PR1)
 - `DateRange` interface in `appointmentService.ts` is not exported. Would be useful for type sharing.
@@ -326,6 +461,11 @@ None. PR3 WARNING (spec-design-implementation misalignment on month overflow) re
 - `DayView.tsx` L118-125: fallback scanning doesn't check `tabIndex >= 0` (unlike WeekView/MonthView).
 - `MonthView.tsx` L79-115: gridcell has no `onClick` for empty days (acceptable for month view, but future UX may want it).
 
+### SUGGESTION (PR4)
+- Two Button implementations coexist (custom vs shadcn) — consolidate.
+- String-based slot matching in handleCreate is fragile.
+- `updateAppointmentPatientSchema` has `min(1).optional()` pattern — unusual but valid.
+
 ---
 
 ## Verdict
@@ -333,19 +473,41 @@ None. PR3 WARNING (spec-design-implementation misalignment on month overflow) re
 ### PR1: PASS
 ### PR2: PASS
 ### PR3: PASS (v3 — doc correction resolves last WARNING)
+### PR4: PASS (v2 — all 3 warnings resolved, 16/16 spec scenarios compliant)
 
-All PRs pass. PR3's remaining WARNING (spec-design-implementation misalignment on month overflow) resolved by updating spec.md and design.md to reflect the product decision (expand cell vertically, no overflow cap).
+PR4 passes. All 3 actionable warnings fixed (ESLint unused imports, setState-in-effect → key-based reset, network error message now matches spec). 2 backend warnings documented as tech debt (`updateAppointmentPatient` outside transaction, O(n) authorization fetch). All 3 core tasks complete. 16/16 spec scenarios fully compliant. TypeScript passes clean on both frontend and backend. Vite build passes. ESLint passes clean on PR4 files. `createConfirmedAppointment` correctly skips SMS verification. Confirmation dialogs protect destructive actions. Calendar refreshes after all mutations. **Re-verified Sat Jun 13 2026** — all fixes confirmed in place.
 
 ---
 
 ## Change Summary
 
-| Aspect | PR1 | PR2 (initial) | PR2 (re-verify) | PR3 (v1) | PR3 (v2 re-verify) | PR3 (v3 doc fix) |
-|--------|-----|---------------|-----------------|----------|---------------------|-------------------|
-| Verdict | PASS | PASS WITH WARNINGS | PASS | FAIL | PASS WITH WARNINGS | PASS |
-| Tasks complete | 4/4 | 7/7 | 7/7 | 3/3 | 3/3 + 2 fixes | 3/3 + 2 fixes + doc fix |
-| Spec scenarios | 12/12 compliant | 12/22 compliant, 8 partial, 2 untested | 15/22 compliant, 7 partial, 0 untested | 18/22 compliant, 2 partial, 1 failing, 1 untested | 21/22 compliant, 0 partial, 1 failing, 0 untested | 22/22 compliant |
-| CRITICAL issues | 0 | 0 | 0 | 1 | 0 | 0 |
-| WARNING issues | 0 (was 1, resolved) | 5 | 0 | 2 | 1 | 0 |
-| SUGGESTION issues | 2 | 2 (same as PR1) | 2 (same as PR1) | 5 | 6 | 6 |
-| Build | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Aspect | PR1 | PR2 | PR3 | PR4 |
+|--------|-----|-----|-----|-----|
+| Verdict | PASS | PASS | PASS | PASS (v2) |
+| Tasks complete | 4/4 | 7/7 + 5 fixes | 3/3 + 2 fixes + doc fix | 3/3 + 3 warning fixes |
+| Spec scenarios | 12/12 compliant | 15/22 compliant → 22/22 (post-PR3) | 22/22 compliant | 16/16 compliant |
+| CRITICAL issues | 0 | 0 | 0 | 0 |
+| WARNING issues | 0 (was 1, resolved) | 0 (was 5, resolved) | 0 (was 2, resolved) | 0 (3 fixed, 2 → tech debt) |
+| SUGGESTION issues | 2 | 2 | 6 | 3 |
+| Build (tsc + vite) | ✅ | ✅ | ✅ | ✅ |
+| ESLint | ➖ | ➖ | ✅ 0 errors | ✅ 0 errors (PR4 files) |
+
+**Overall verdict**: PASS — all 4 PRs complete, all CRITICAL issues resolved, all WARNING issues either fixed or documented as tech debt. 16/16 spec scenarios compliant. ESLint clean on all PR4 files. Tech debt items tracked for future optimization. **PR4 re-verified Sat Jun 13 2026** — 3/3 warnings resolved, build and lint clean.
+
+---
+
+## Tech Debt (PR4 — Documented, Not Fixed)
+
+### TD-1: `updateAppointmentPatient` runs outside Prisma transaction
+
+- **Location**: `backend/src/services/appointmentService.ts` L355-390
+- **Risk**: Low — race condition if appointment is deleted between patient update and final read
+- **Fix**: Wrap `findUnique → patient.update → findUnique` in `prisma.$transaction()`
+- **Why not fixed**: Out of scope for this PR (frontend-focused change). Backend already works correctly; transaction would add safety.
+
+### TD-2: Controller authorization fetches all doctor appointments O(n)
+
+- **Location**: `backend/src/controllers/doctorPanelController.ts` L138-139 (updateAppointmentPatient), L173-174 (deleteAppointment)
+- **Risk**: Low — correct but inefficient at scale. Fetches all appointments for a doctor, then `.find()` by ID.
+- **Fix**: Replace with direct Prisma query: `prisma.appointment.findUnique({ where: { id: appointmentId }, include: { doctor: ... } })` then check `appointment.doctorId === doctorId`
+- **Why not fixed**: Out of scope for this PR. Works correctly at current scale; optimization can be done when appointment volumes grow.

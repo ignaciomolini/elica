@@ -1,7 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import type { Appointment } from '../../types';
 import { useCalendarStore } from '../../store/calendarStore';
 import { doctorPanelApi } from '../../services/api';
 import { getStatusColors } from './statusColors';
@@ -12,7 +11,6 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-  DialogClose,
 } from '../ui/dialog';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
@@ -28,7 +26,7 @@ import {
   AlertDialogAction,
 } from '../ui/alert-dialog';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { Cancel01Icon, Delete02Icon, Edit02Icon, Tick01Icon } from '@hugeicons/core-free-icons';
+import { Delete02Icon, Edit02Icon, Tick01Icon } from '@hugeicons/core-free-icons';
 
 interface FormData {
   patientName: string;
@@ -44,33 +42,36 @@ const initialFormData: FormData = {
   patientDni: '',
 };
 
+/**
+ * Returns a user-facing error message. Network failures (TypeError from fetch)
+ * produce the spec-required "Error de conexion. Intente nuevamente." message;
+ * all other errors use the server message or a caller-provided fallback.
+ */
+function getErrorMessage(err: unknown, fallback: string): string {
+  if (err instanceof TypeError) {
+    return 'Error de conexion. Intente nuevamente.';
+  }
+  return err instanceof Error ? err.message : fallback;
+}
+
 export function AppointmentPopup() {
   const { popup, closePopup, fetchAppointments } = useCalendarStore();
-  const { open, mode, date, time, appointment } = popup;
+  const { date, time, appointment, mode } = popup;
 
-  const [form, setForm] = useState<FormData>(initialFormData);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [confirmAction, setConfirmAction] = useState<'cancel' | 'delete' | null>(null);
-
-  // Populate form when popup opens
-  useEffect(() => {
-    if (!open) return;
-    setError(null);
-    setSaving(false);
-    setConfirmAction(null);
-
-    if (mode === 'edit' && appointment) {
-      setForm({
+  // Form is initialized from store data on each mount (key-based reset in CalendarView)
+  const initialForm = mode === 'edit' && appointment
+    ? {
         patientName: appointment.patient?.name ?? '',
         patientEmail: appointment.patient?.email ?? '',
         patientPhone: appointment.patient?.phone ?? '',
         patientDni: appointment.patient?.dni ?? '',
-      });
-    } else {
-      setForm(initialFormData);
-    }
-  }, [open, mode, appointment]);
+      }
+    : initialFormData;
+
+  const [form, setForm] = useState<FormData>(initialForm);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [confirmAction, setConfirmAction] = useState<'cancel' | 'delete' | null>(null);
 
   const handleChange = (field: keyof FormData, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -124,8 +125,7 @@ export function AppointmentPopup() {
       closePopup();
       fetchAppointments();
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Error al crear el turno';
-      setError(message);
+      setError(getErrorMessage(err, 'Error al crear el turno'));
       setSaving(false);
     }
   };
@@ -151,8 +151,7 @@ export function AppointmentPopup() {
       closePopup();
       fetchAppointments();
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Error al guardar los cambios';
-      setError(message);
+      setError(getErrorMessage(err, 'Error al guardar los cambios'));
       setSaving(false);
     }
   };
@@ -167,8 +166,7 @@ export function AppointmentPopup() {
       closePopup();
       fetchAppointments();
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Error al confirmar el turno';
-      setError(message);
+      setError(getErrorMessage(err, 'Error al confirmar el turno'));
       setSaving(false);
     }
   };
@@ -184,8 +182,7 @@ export function AppointmentPopup() {
       closePopup();
       fetchAppointments();
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Error al cancelar el turno';
-      setError(message);
+      setError(getErrorMessage(err, 'Error al cancelar el turno'));
       setSaving(false);
     }
   };
@@ -201,8 +198,7 @@ export function AppointmentPopup() {
       closePopup();
       fetchAppointments();
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Error al eliminar el turno';
-      setError(message);
+      setError(getErrorMessage(err, 'Error al eliminar el turno'));
       setSaving(false);
     }
   };

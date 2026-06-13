@@ -34,7 +34,7 @@ function getViewRangeLabel(viewMode: ViewMode, currentDate: Date): string {
 }
 
 export function CalendarView() {
-  const { viewMode, currentDate, loading, error, setViewMode, navigate, goToToday, fetchAppointments, fetchSchedules } =
+  const { viewMode, currentDate, loading, error, setViewMode, navigate, goToToday, fetchAppointments, fetchSchedules, popup } =
     useCalendarStore();
 
   useEffect(() => {
@@ -129,8 +129,12 @@ export function CalendarView() {
         {viewMode === 'month' && <MonthView />}
       </div>
 
-      {/* Appointment popup (create/edit) */}
-      <AppointmentPopup />
+      {/* Appointment popup (create/edit) — key forces remount on context change */}
+      {popup.open && (
+        <AppointmentPopup
+          key={`${popup.mode}-${popup.time ?? 'none'}-${popup.appointment?.id ?? 'new'}-${popup.date?.toISOString().slice(0, 10) ?? 'no-date'}`}
+        />
+      )}
     </div>
   );
 }
