@@ -121,7 +121,7 @@ export function DayView() {
                       target.focus();
                       return;
                     }
-                    nextRow += dRow;
+                    nextRow += rowDelta;
                   }
                 }}
                 aria-label={
