@@ -11,7 +11,7 @@ Replace the HTML-table doctor appointments view with a custom interactive calend
 | Calendar rendering | react-big-calendar vs custom date-fns+Tailwind | Library: fast but CSS conflicts with Tailwind v4 + theming pain. Custom: more effort, full control. | **Custom** — matches existing teal/mint design system, no CSS-in-JS clash |
 | State management | URL search params vs Zustand store | URL: shareable links. Zustand: simpler, matches existing pattern (authStore, bookingStore). | **Zustand store** — consistent with project conventions; URL params not needed for doctor-only view |
 | Popup dialog | Custom modal vs shadcn Dialog | Custom: zero deps. shadcn: accessible, matches existing UI kit. | **shadcn Dialog** — need to add via `shadcn add dialog`; gets focus trap, Escape, backdrop for free |
-| Month overflow | "+N more" link vs expand-in-cell | "+N more": cleaner. Expand: spec requires showing all up to 3, then "+N more". | **Show first 3 + "+N more"** per spec |
+| Month overflow | "+N more" link vs expand-in-cell | "+N more": cleaner grid. Expand: shows all shifts, no hidden info, product decision. | **Expand cell vertically** — product decision: show all appointments, no overflow cap |
 | Prisma index | None vs `@@index([doctorId, date])` | None: slow on large datasets. Index: fast range scans. | **Add composite index** — `getDoctorAppointments` filters by `doctorId` + date range |
 
 ## Data Flow
@@ -55,7 +55,7 @@ User clicks nav/toggle
 | `src/components/calendar/CalendarView.tsx` | Create | Container: toolbar (toggle + nav + today), renders DayView/WeekView/MonthView, fetches on range change |
 | `src/components/calendar/DayView.tsx` | Create | Hourly rows for single day; each row is a clickable cell |
 | `src/components/calendar/WeekView.tsx` | Create | 7-column grid, hourly rows; cells show patient name or empty |
-| `src/components/calendar/MonthView.tsx` | Create | Month grid; day cells list up to 3 appointments + "+N more" |
+| `src/components/calendar/MonthView.tsx` | Create | Month grid; day cells expand vertically to list all appointments (no overflow cap) |
 | `src/components/calendar/AppointmentPopup.tsx` | Create | shadcn Dialog: create/edit form, confirm/cancel/delete actions |
 | `src/components/calendar/statusColors.ts` | Create | Maps `AppointmentStatus` → Tailwind classes |
 | `src/pages/doctor/Appointments.tsx` | Modify | Replace table with `<CalendarView />` wrapper |

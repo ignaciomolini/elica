@@ -106,7 +106,7 @@ The system MUST display a 7-day grid with time slots as rows and days as columns
 
 ### Requirement: Month View Layout
 
-The system MUST display a calendar month grid where each day cell expands to show all appointments for that day. The cell SHALL list patient names and times for each appointment, truncated if more than 3 appointments exist.
+The system MUST display a calendar month grid where each day cell expands vertically to show all appointments for that day. The cell SHALL list patient names and times for all appointments without truncation or overflow cap.
 
 #### Scenario: Month view shows full month grid
 
@@ -120,11 +120,11 @@ The system MUST display a calendar month grid where each day cell expands to sho
 - WHEN month view renders
 - THEN the June 15 cell shows both appointments with patient name and time
 
-#### Scenario: More than 3 appointments shows overflow indicator
+#### Scenario: Day cell expands to show all appointments
 
 - GIVEN a day has 5 appointments
 - WHEN month view renders
-- THEN the cell shows the first 3 appointments and a "+2 more" indicator
+- THEN the day cell expands vertically to list all 5 appointments with patient name and time
 
 ### Requirement: Appointment Cell Click
 

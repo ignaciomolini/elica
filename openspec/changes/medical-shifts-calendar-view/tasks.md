@@ -61,6 +61,13 @@ Chain strategy: pending
 - [x] BUG: `DayView.tsx` L124: `nextRow += dRow` → `nextRow += rowDelta` (undefined variable regression from commit ee473f8)
 - [x] ENHANCEMENT: `MonthView.tsx`: add keyboard navigation (Arrow Up/Down = weeks, Left/Right = days, Enter opens first appointment, tabIndex on in-month cells, focus ring, role="grid", aria-label)
 
+## Phase 3 Doc Corrections (PR 3 — Spec/Design Alignment)
+
+- [x] DOCS: Update spec.md Month View requirement — remove "truncated if more than 3" and "+N more" scenario; replace with "expands vertically, no overflow cap" and "Day cell expands to show all appointments" scenario
+- [x] DOCS: Update design.md architecture decision — "Month overflow" choice changed from "Show first 3 + +N more" to "Expand cell vertically (product decision: show all, no overflow cap)"
+- [x] DOCS: Update design.md File Changes — MonthView description changed from "list up to 3 + +N more" to "expand vertically to list all (no overflow cap)"
+- [x] DOCS: Update tasks.md QA task 5.4 — remove "+N more overflow" from acceptance checklist
+
 ## Phase 4: Appointment Popup (PR 4)
 
 - [ ] 4.1 Run `npx shadcn@latest add dialog` to install shadcn Dialog component
@@ -72,4 +79,4 @@ Chain strategy: pending
 - [ ] 5.1 Manual QA: API date-range filter returns correct subset (browser devtools + seeded DB)
 - [ ] 5.2 Manual QA: day/week/month views render, navigate correctly, respect DoctorSchedule hours
 - [ ] 5.3 Manual QA: popup create/edit/cancel/delete flows succeed and refresh calendar
-- [ ] 5.4 Manual QA: status colors match spec, loading spinner, empty state messages, +N more overflow, keyboard arrow nav, focus ring
+- [ ] 5.4 Manual QA: status colors match spec, loading spinner, empty state messages, keyboard arrow nav, focus ring
