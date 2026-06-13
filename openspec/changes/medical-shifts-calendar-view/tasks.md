@@ -42,6 +42,14 @@ Chain strategy: pending
 - [x] 2.6 Create `src/components/calendar/CalendarView.tsx`: container with view toggle (day/week/month), date nav (prev/next/today), current range label
 - [x] 2.7 Replace table in `src/pages/doctor/Appointments.tsx` with `<CalendarView />`; remove old DoctorAppointments component
 
+## Phase 2 Post-Verify Fixes (PR 2 — Warning Corrections)
+
+- [x] W1: Add empty state message "No hay turnos para esta semana" in WeekView
+- [x] W2: Implement arrow key navigation (Left/Right = days, Up/Down = hours) in week grid
+- [x] W3: Add `focus:ring-2 focus:ring-primary-500 focus:outline-none` on calendar cells
+- [x] W4: Add explicit `startOfDay`/`endOfDay` imports from date-fns in calendarStore.ts
+- [x] W5: Remove duplicate loading indicator (CalendarView owns loading state; WeekView no longer shows its own)
+
 ## Phase 3: Additional Views (PR 3)
 
 - [ ] 3.1 Create `src/components/calendar/DayView.tsx`: single-day hourly rows, respects DoctorSchedule hours

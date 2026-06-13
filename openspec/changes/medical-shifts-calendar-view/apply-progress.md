@@ -33,6 +33,18 @@
 
 4020a2b (feat: add date-fns), 9577153 (feat: store, colors, utils), f4f7927 (feat: week view), be8d0ce (feat: CalendarView shell + route wiring), cc3d31e (fix: remove unused imports)
 
+### Post-Verify Fixes (PR2 — Warning Corrections)
+
+- [x] **W1 Empty state**: Added "No hay turnos para esta semana" banner in WeekView when `!loading && appointments.length === 0`
+- [x] **W2 Arrow key navigation**: Implemented Left/Right (days) and Up/Down (hours) navigation in week grid with `data-row`/`data-col` attributes and `gridRef`-based focus scanning; skips day-off cells (tabIndex=-1)
+- [x] **W3 Focus ring**: Added `focus:ring-2 focus:ring-primary-500 focus:outline-none` classes to all interactive calendar cells
+- [x] **W4 Missing imports**: Added `startOfDay` and `endOfDay` to date-fns import list in `calendarStore.ts`
+- [x] **W5 Double loading indicator**: Removed duplicate loading guard from WeekView; CalendarView owns the loading state display
+
+### PR2 Post-Verify Commits
+
+4a1a6a3 (fix: add missing startOfDay/endOfDay imports), 549ef76 (fix: resolve 5 PR2 verification warnings)
+
 ## Files Changed
 
 | File | Action | What Was Done |
@@ -44,10 +56,10 @@
 | `src/services/api.ts` | Modified | Query string builder for getAppointments |
 | `package.json` | Modified | Added date-fns dependency |
 | `package-lock.json` | Modified | Lockfile for date-fns |
-| `src/store/calendarStore.ts` | Created | Zustand store with viewMode, navigation, date-range fetching, popup state |
+| `src/store/calendarStore.ts` | Modified | Added startOfDay/endOfDay to date-fns imports (post-verify W4) |
 | `src/components/calendar/statusColors.ts` | Created | PENDING→amber, CONFIRMED→primary, CANCELLED→faded-red |
 | `src/components/calendar/calendarUtils.ts` | Created | getWeekDays, getMonthGrid, getHoursRange, formatSlotKey, getScheduleForDay |
-| `src/components/calendar/WeekView.tsx` | Created | 7-col grid, hourly rows, DoctorSchedule support, status-colored clickable cells |
+| `src/components/calendar/WeekView.tsx` | Modified | Post-verify: empty state (W1), arrow key nav (W2), focus ring (W3), removed duplicate loading (W5), added gridRef/data-row/data-col |
 | `src/components/calendar/CalendarView.tsx` | Created | View toggle (day/week/month), date nav, range label, Spanish locale |
 | `src/pages/doctor/Appointments.tsx` | Modified | Replaced HTML table with CalendarView component |
 
